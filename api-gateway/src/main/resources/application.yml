@@ -39,11 +39,22 @@ spring:
           predicates:
             - Path=/api/v1/users/**
 
+        # Product endpoints
+        - id: product-service-products
+          uri: lb://product-service
+          predicates:
+            - Path=/api/v1/products/**,/api/v1/categories/**,/api/v1/brands/**,/api/v1/ingredients/**
+            
         # Admin endpoints
         - id: user-service-admin
           uri: lb://user-service
           predicates:
-            - Path=/api/v1/admin/**
+            - Path=/api/v1/admin/users/**
+            
+        - id: product-service-admin
+          uri: lb://product-service
+          predicates:
+            - Path=/api/v1/admin/products/**,/api/v1/admin/categories/**,/api/v1/admin/brands/**,/api/v1/admin/ingredients/**
 
         # Internal endpoints — BLOCKED from external access
         # These should only be accessed via service-to-service calls
@@ -62,6 +73,13 @@ spring:
             - Path=/user-service/v3/api-docs/**
           filters:
             - RewritePath=/user-service/(?<segment>.*), /${segment}
+        
+        - id: product-service-docs
+          uri: lb://product-service
+          predicates:
+            - Path=/product-service/v3/api-docs/**
+          filters:
+            - RewritePath=/product-service/(?<segment>.*), /${segment}
 
 eureka:
   client:
@@ -81,6 +99,8 @@ springdoc:
     urls:
       - name: User Service
         url: /user-service/v3/api-docs
+      - name: Product Service
+        url: /product-service/v3/api-docs
 
 logging:
   level:
