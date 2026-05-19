@@ -1,0 +1,13 @@
+.env
+misc.xml
+compiler.xml
+vcs.xml
+generated-sources/
+generated-test-sources/
+surefire-reports/
+*.class
+.DS_Store
+mvnw
+mvnw.cmd
+CLAUDE.md
+user-service/output.log
