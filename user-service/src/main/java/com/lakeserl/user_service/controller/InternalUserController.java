@@ -1,12 +1,21 @@
 package com.lakeserl.user_service.controller;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.lakeserl.user_service.model.dto.UserDTO;
+import com.lakeserl.user_service.model.dto.internal.UserInternalDTO;
 import com.lakeserl.user_service.model.dto.response.AddressResponse;
 import com.lakeserl.user_service.model.dto.response.ApiResponse;
 import com.lakeserl.user_service.model.entity.UserPoint;
@@ -42,6 +51,13 @@ public class InternalUserController {
     @GetMapping("/{id}/points")
     public ResponseEntity<ApiResponse<UserPoint>> getPoints(@PathVariable UUID id) {
         return ResponseEntity.ok(ApiResponse.ok(loyaltyService.getPoints(id)));
+    }
+
+    @GetMapping("/batch")
+    public ResponseEntity<ApiResponse<List<UserInternalDTO>>> getUsersBatch(
+            @RequestParam List<UUID> ids,
+            @RequestHeader("X-Internal-Secret") String secret) {
+        return ResponseEntity.ok(ApiResponse.ok(userService.findAllByIds(ids)));
     }
 
     @PostMapping("/{id}/points")

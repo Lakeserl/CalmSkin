@@ -1,8 +1,10 @@
 package com.lakeserl.user_service.service;
 
+import java.util.List;
 import java.util.UUID;
 
 import com.lakeserl.user_service.model.dto.UserDTO;
+import com.lakeserl.user_service.model.dto.internal.UserInternalDTO;
 import com.lakeserl.user_service.model.dto.request.ChangePasswordRequest;
 import com.lakeserl.user_service.model.dto.request.UpdateProfileRequest;
 import com.lakeserl.user_service.model.entity.User;
@@ -24,4 +26,6 @@ public interface UserService {
     void deleteAvatar(UUID userId);
 
     User findById(UUID userId);
+
+    List<UserInternalDTO> findAllByIds(List<UUID> ids);
 }

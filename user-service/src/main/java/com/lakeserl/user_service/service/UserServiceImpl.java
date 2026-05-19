@@ -1,5 +1,6 @@
 package com.lakeserl.user_service.service;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -11,6 +12,7 @@ import com.lakeserl.user_service.exception.PhoneAlreadyExistsException;
 import com.lakeserl.user_service.exception.UserNotFoundException;
 import com.lakeserl.user_service.mapper.UserMapper;
 import com.lakeserl.user_service.model.dto.UserDTO;
+import com.lakeserl.user_service.model.dto.internal.UserInternalDTO;
 import com.lakeserl.user_service.model.dto.request.ChangePasswordRequest;
 import com.lakeserl.user_service.model.dto.request.UpdateProfileRequest;
 import com.lakeserl.user_service.model.entity.User;
@@ -86,6 +88,13 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public List<UserInternalDTO> findAllByIds(List<UUID> ids) {
+        return userRepository.findAllById(ids).stream()
+                .map(this::toInternalDto)
+                .toList();
+    }
+
+    @Override
     @Transactional
     public String uploadAvatar(UUID userId, org.springframework.web.multipart.MultipartFile file) {
         User user = findById(userId);
@@ -110,5 +119,14 @@ public class UserServiceImpl implements UserService {
         User user = findById(userId);
         user.setAvatarUrl(null);
         userRepository.save(user);
+    }
+
+    private UserInternalDTO toInternalDto(User user) {
+        return UserInternalDTO.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .fullName(user.getFullName())
+                .status(user.getStatus())
+                .build();
     }
 }
