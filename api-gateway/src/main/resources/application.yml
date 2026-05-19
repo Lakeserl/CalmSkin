@@ -5,6 +5,11 @@ spring:
   application:
     name: api-gateway
 
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: 6379
+
   cloud:
     gateway:
       globalcors:
@@ -45,7 +50,6 @@ spring:
           predicates:
             - Path=/api/v1/products/**,/api/v1/categories/**,/api/v1/brands/**,/api/v1/ingredients/**
             
-        # Admin endpoints
         - id: user-service-admin
           uri: lb://user-service
           predicates:
@@ -55,6 +59,16 @@ spring:
           uri: lb://product-service
           predicates:
             - Path=/api/v1/admin/products/**,/api/v1/admin/categories/**,/api/v1/admin/brands/**,/api/v1/admin/ingredients/**
+
+        - id: inventory-service-inventory
+          uri: lb://inventory-service
+          predicates:
+            - Path=/api/v1/inventory/**
+            
+        - id: inventory-service-admin
+          uri: lb://inventory-service
+          predicates:
+            - Path=/api/v1/admin/inventory/**
 
         # Internal endpoints — BLOCKED from external access
         # These should only be accessed via service-to-service calls
@@ -66,7 +80,6 @@ spring:
           filters:
             - SetStatus=403
 
-        # User service Swagger docs
         - id: user-service-docs
           uri: lb://user-service
           predicates:
@@ -80,6 +93,13 @@ spring:
             - Path=/product-service/v3/api-docs/**
           filters:
             - RewritePath=/product-service/(?<segment>.*), /${segment}
+
+        - id: inventory-service-docs
+          uri: lb://inventory-service
+          predicates:
+            - Path=/inventory-service/v3/api-docs/**
+          filters:
+            - RewritePath=/inventory-service/(?<segment>.*), /${segment}
 
 eureka:
   client:
@@ -101,8 +121,47 @@ springdoc:
         url: /user-service/v3/api-docs
       - name: Product Service
         url: /product-service/v3/api-docs
+      - name: Inventory Service
+        url: /inventory-service/v3/api-docs
+
+management:
+  tracing:
+    sampling:
+      probability: 1.0
+  zipkin:
+    tracing:
+      endpoint: http://${ZIPKIN_HOST:localhost}:9411/api/v2/spans
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+      environment: ${ENVIRONMENT:dev}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      percentiles:
+        http.server.requests: 0.5,0.9,0.95,0.99
 
 logging:
   level:
     root: INFO
     org.springframework.cloud.gateway: INFO
+  pattern:
+    level: "%5p [${spring.application.name},%X{traceId:-},%X{spanId:-}]"
+
+app:
+  jwt:
+    secret: ${JWT_SECRET}
