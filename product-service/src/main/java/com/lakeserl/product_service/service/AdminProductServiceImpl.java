@@ -11,7 +11,9 @@ import com.lakeserl.product_service.entity.*;
 import com.lakeserl.product_service.enums.ProductStatus;
 import com.lakeserl.product_service.exception.DuplicateSkuException;
 import com.lakeserl.product_service.exception.DuplicateSlugException;
+import com.lakeserl.product_service.exception.InvalidProductStatusException;
 import com.lakeserl.product_service.exception.ProductNotFoundException;
+import com.lakeserl.product_service.exception.ProductVariantLimitException;
 import com.lakeserl.product_service.mapper.ProductMapper;
 import com.lakeserl.product_service.mapper.VariantMapper;
 import com.lakeserl.product_service.repository.*;
@@ -34,6 +36,7 @@ public class AdminProductServiceImpl implements AdminProductService {
     private final IngredientRepository ingredientRepository;
     private final TagRepository tagRepository;
     private final ProductVariantRepository variantRepository;
+    private final ProductImageRepository productImageRepository;
     private final ProductIngredientRepository productIngredientRepository;
     private final ProductTagRepository productTagRepository;
     
@@ -126,6 +129,21 @@ public class AdminProductServiceImpl implements AdminProductService {
     public ProductDTO updateProductStatus(Long id, ProductStatus status) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ProductNotFoundException(id));
+        if (status == ProductStatus.ACTIVE) {
+            boolean hasImage = productImageRepository.existsByProductId(id);
+            if (!hasImage) {
+                throw new InvalidProductStatusException("Cannot activate product without at least one image");
+            }
+
+            if (product.getBasePrice() == null
+                    || product.getBasePrice().compareTo(java.math.BigDecimal.ZERO) <= 0) {
+                throw new InvalidProductStatusException("Cannot activate product with invalid price");
+            }
+
+            if (product.getCategory() == null || product.getBrand() == null) {
+                throw new InvalidProductStatusException("Cannot activate product without category and brand");
+            }
+        }
         product.setStatus(status);
         return productMapper.toDto(productRepository.save(product));
     }
@@ -135,6 +153,11 @@ public class AdminProductServiceImpl implements AdminProductService {
     public ProductVariantDTO addVariant(Long productId, CreateVariantRequest request) {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new ProductNotFoundException(productId));
+
+        long variantCount = variantRepository.countByProductId(productId);
+        if (variantCount >= 20) {
+            throw new ProductVariantLimitException("Product cannot have more than 20 variants");
+        }
 
         if (variantRepository.existsBySku(request.getSku())) {
             throw new DuplicateSkuException(request.getSku());

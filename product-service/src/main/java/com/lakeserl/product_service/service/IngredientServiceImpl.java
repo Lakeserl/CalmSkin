@@ -8,11 +8,13 @@ import com.lakeserl.product_service.dto.response.IngredientDTO;
 import com.lakeserl.product_service.dto.response.IngredientSafetyDTO;
 import com.lakeserl.product_service.entity.Ingredient;
 import com.lakeserl.product_service.entity.IngredientConflict;
+import com.lakeserl.product_service.entity.ProductIngredient;
 import com.lakeserl.product_service.enums.IngredientSafetyLevel;
 import com.lakeserl.product_service.exception.IngredientNotFoundException;
 import com.lakeserl.product_service.mapper.IngredientMapper;
 import com.lakeserl.product_service.repository.IngredientConflictRepository;
 import com.lakeserl.product_service.repository.IngredientRepository;
+import com.lakeserl.product_service.repository.ProductIngredientRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +30,7 @@ public class IngredientServiceImpl implements IngredientService {
     private final IngredientRepository ingredientRepository;
     private final IngredientConflictRepository conflictRepository;
     private final IngredientMapper ingredientMapper;
+    private final ProductIngredientRepository productIngredientRepository;
 
     @Override
     public List<IngredientDTO> getAllIngredients() {
@@ -41,6 +44,15 @@ public class IngredientServiceImpl implements IngredientService {
         Ingredient ingredient = ingredientRepository.findById(id)
                 .orElseThrow(() -> new IngredientNotFoundException(id));
         return ingredientMapper.toDto(ingredient);
+    }
+
+    @Override
+    public List<IngredientDTO> getIngredientsByProductId(Long productId) {
+        List<ProductIngredient> links = productIngredientRepository.findByProductIdOrderByDisplayOrderAsc(productId);
+        return links.stream()
+                .map(ProductIngredient::getIngredient)
+                .map(ingredientMapper::toDto)
+                .collect(Collectors.toList());
     }
 
     @Override
