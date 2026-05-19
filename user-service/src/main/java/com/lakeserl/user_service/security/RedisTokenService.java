@@ -1,5 +1,6 @@
 package com.lakeserl.user_service.security;
 
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.springframework.data.redis.core.RedisTemplate;
@@ -14,7 +15,8 @@ public class RedisTokenService {
     private final RedisTemplate<String, Object> redis;
 
     private String otpKey(String userId, String type)   { return "otp:" + userId + ":" + type; }
-    private String refreshKey(String userId)            { return "refresh_token:" + userId; }
+    private String refreshHashKey(String tokenHash)     { return "refresh_token:hash:" + tokenHash; }
+    private String refreshUserKey(String userId)        { return "refresh_token:user:" + userId; }
     private String loginAttemptKey(String email)        { return "login_attempts:" + email; }
     private String blacklistKey(String jti)             { return "blacklist_token:" + jti; }
     private String rateLimitKey(String ip, String ep)   { return "rate_limit:" + ip + ":" + ep; }
@@ -33,21 +35,29 @@ public class RedisTokenService {
     }
 
     public void saveRefreshToken(String userId, String tokenHash) {
-        String key = refreshKey(userId);
-        redis.opsForSet().add(key, tokenHash);
-        redis.expire(key, 7, TimeUnit.DAYS);
+        redis.opsForValue().set(refreshHashKey(tokenHash), userId, 7, TimeUnit.DAYS);
+        redis.opsForSet().add(refreshUserKey(userId), tokenHash);
+        redis.expire(refreshUserKey(userId), 7, TimeUnit.DAYS);
     }
 
     public boolean isRefreshTokenValid(String userId, String tokenHash) {
-        return Boolean.TRUE.equals(redis.opsForSet().isMember(refreshKey(userId), tokenHash));
+        Object storedUserId = redis.opsForValue().get(refreshHashKey(tokenHash));
+        return storedUserId != null && storedUserId.toString().equals(userId);
     }
 
     public void revokeRefreshToken(String userId, String tokenHash) {
-        redis.opsForSet().remove(refreshKey(userId), tokenHash);
+        redis.delete(refreshHashKey(tokenHash));
+        redis.opsForSet().remove(refreshUserKey(userId), tokenHash);
     }
 
     public void revokeAllRefreshTokens(String userId) {
-        redis.delete(refreshKey(userId));
+        Set<Object> hashes = redis.opsForSet().members(refreshUserKey(userId));
+        if (hashes != null) {
+            for (Object hash : hashes) {
+                redis.delete(refreshHashKey(hash.toString()));
+            }
+        }
+        redis.delete(refreshUserKey(userId));
     }
 
     public void blacklist(String jti, long ttlSeconds) {
