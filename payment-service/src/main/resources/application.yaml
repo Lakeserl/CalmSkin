@@ -1,0 +1,147 @@
+server:
+  port: ${SERVER_PORT:8085}
+
+spring:
+  application:
+    name: payment-service
+
+  profiles:
+    active: dev
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/${POSTGRES_DB_PAYMENT_SERVICE:calm_skin_payment_db}}
+    username: ${POSTGRES_USER:calm_skin}
+    password: ${POSTGRES_PASSWORD:calm_skin}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      pool-name: payment-service-pool
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      leak-detection-threshold: 60000
+      connection-test-query: SELECT 1
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc.batch_size: 25
+        order_inserts: true
+        order_updates: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer:   org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
+      retries: 3
+      properties:
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 1
+    consumer:
+      group-id: payment-service
+      key-deserializer:   org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      enable-auto-commit: false
+      auto-offset-reset: earliest
+    listener:
+      ack-mode: MANUAL_IMMEDIATE
+      concurrency: 3
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://${EUREKA_HOST:localhost}:8761/eureka/
+    fetch-registry: true
+    register-with-eureka: true
+  instance:
+    prefer-ip-address: true
+
+management:
+  tracing:
+    sampling:
+      probability: 1.0  
+  zipkin:
+    tracing:
+      endpoint: http://${ZIPKIN_HOST:localhost}:9411/api/v2/spans
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+logging:
+  pattern:
+    level: "%5p [${spring.application.name},%X{traceId:-},%X{spanId:-}]"
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+
+app:
+  internal-secret: ${INTERNAL_SECRET:dev-internal-secret-change-in-prod}
+
+  payment:
+    expiry-minutes: 15
+
+  vnpay:
+    tmn-code:      ${VNPAY_TMN_CODE:YOUR_TMN_CODE}
+    hash-secret:   ${VNPAY_HASH_SECRET:YOUR_HASH_SECRET}
+    payment-url:   ${VNPAY_PAYMENT_URL:https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}
+    api-url:       ${VNPAY_API_URL:https://sandbox.vnpayment.vn/merchant_webapi/api/transaction}
+    return-url:    ${VNPAY_RETURN_URL:http://localhost:8080/api/v1/payments/webhook/vnpay/return}
+    version:       "2.1.0"
+    command:       "pay"
+    order-type:    "other"
+    locale:        "vn"
+    curr-code:     "VND"
+
+  momo:
+    partner-code:  ${MOMO_PARTNER_CODE:YOUR_PARTNER_CODE}
+    access-key:    ${MOMO_ACCESS_KEY:YOUR_ACCESS_KEY}
+    secret-key:    ${MOMO_SECRET_KEY:YOUR_SECRET_KEY}
+    endpoint:      ${MOMO_ENDPOINT:https://test-payment.momo.vn}
+    redirect-url:  ${MOMO_REDIRECT_URL:http://localhost:3000/payment/result}
+    ipn-url:       ${MOMO_IPN_URL:http://localhost:8085/api/v1/payments/webhook/momo/ipn}
+    request-type:  "payWithMethod"
+    lang:          "vi"
+
+  zalopay:
+    app-id:        ${ZALOPAY_APP_ID:YOUR_APP_ID}
+    key1:          ${ZALOPAY_KEY1:YOUR_KEY1}
+    key2:          ${ZALOPAY_KEY2:YOUR_KEY2}
+    endpoint:      ${ZALOPAY_ENDPOINT:https://sb-openapi.zalopay.vn}
+    callback-url:  ${ZALOPAY_CALLBACK_URL:http://localhost:8085/api/v1/payments/webhook/zalopay/callback}
+    redirect-url:  ${ZALOPAY_REDIRECT_URL:http://localhost:3000/payment/result}

@@ -8,6 +8,8 @@ services:
       POSTGRES_DB_USER_SERVICE: ${POSTGRES_DB_USER_SERVICE}
       POSTGRES_DB_PRODUCT_SERVICE: ${POSTGRES_DB_PRODUCT_SERVICE}
       POSTGRES_DB_INVENTORY_SERVICE: ${POSTGRES_DB_INVENTORY_SERVICE}
+      POSTGRES_DB_ORDER_SERVICE: ${POSTGRES_DB_ORDER_SERVICE}
+      POSTGRES_DB_PAYMENT_SERVICE: ${POSTGRES_DB_PAYMENT_SERVICE}
     ports:
       - "5433:5432"
     volumes:
@@ -188,6 +190,70 @@ services:
       - calm-skin-network
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8084/actuator/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  order-service:
+    build: ./order-service
+    ports:
+      - "8082:8082"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB_ORDER_SERVICE: ${POSTGRES_DB_ORDER_SERVICE}
+      JWT_SECRET: ${JWT_SECRET}
+      INTERNAL_SECRET: ${INTERNAL_SECRET}
+      EUREKA_URI: http://discovery-service:8761/eureka
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB_ORDER_SERVICE}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      ZIPKIN_HOST: zipkin
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+    networks:
+      - calm-skin-network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8082/actuator/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  payment-service:
+    build: ./payment-service
+    ports:
+      - "8085:8085"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB_PAYMENT_SERVICE: ${POSTGRES_DB_PAYMENT_SERVICE}
+      JWT_SECRET: ${JWT_SECRET}
+      INTERNAL_SECRET: ${INTERNAL_SECRET}
+      EUREKA_URI: http://discovery-service:8761/eureka
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB_PAYMENT_SERVICE}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      ZIPKIN_HOST: zipkin
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+    networks:
+      - calm-skin-network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8085/actuator/health"]
       interval: 15s
       timeout: 10s
       retries: 5

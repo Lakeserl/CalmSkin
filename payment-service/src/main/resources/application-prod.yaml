@@ -1,0 +1,18 @@
+spring:
+  config:
+    activate:
+      on-profile: prod
+  jpa:
+    show-sql: false
+    hibernate:
+      ddl-auto: validate
+
+logging:
+  level:
+    root: INFO
+    com.lakeserl.payment_service: INFO
+
+management:
+  tracing:
+    sampling:
+      probability: 0.1
