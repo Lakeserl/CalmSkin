@@ -12,6 +12,8 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Map;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -52,10 +54,14 @@ public class ReviewSummaryServiceImpl implements ReviewSummaryService {
         reviewSummaryRepository.save(summary);
     }
 
-    @KafkaListener(topics = "review-summary-updated", groupId = "product-service")
-    public void consumeReviewSummaryUpdate(String message) {
+    /**
+     * Master Topic List §8: review-service publishes review.created / review.deleted,
+     * each carrying the recomputed review summary snapshot for the affected product.
+     */
+    @KafkaListener(topics = {"review.created", "review.deleted"}, groupId = "product-service")
+    public void consumeReviewSummaryUpdate(Map<String, Object> event) {
         try {
-            UpdateReviewSummaryRequest request = objectMapper.readValue(message, UpdateReviewSummaryRequest.class);
+            UpdateReviewSummaryRequest request = objectMapper.convertValue(event, UpdateReviewSummaryRequest.class);
             handleReviewSummaryUpdate(request);
         } catch (Exception e) {
             log.error("Error processing review summary update from Kafka", e);

@@ -1,7 +1,6 @@
 package com.lakeserl.product_service.service;
 
 import com.lakeserl.product_service.dto.event.ProductUpdatedEvent;
-import com.lakeserl.product_service.dto.event.ProductViewedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -14,22 +13,15 @@ public class ProductEventProducer {
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
-    private static final String TOPIC_PRODUCT_VIEWED = "product-viewed";
-    private static final String TOPIC_PRODUCT_UPDATED = "product-updated";
+    // Master Topic List §8: product-service publishes exactly one topic.
+    private static final String TOPIC_PRODUCT_STATUS_CHANGED = "product.status-changed";
 
-    public void publishProductViewed(ProductViewedEvent event) {
+    public void publishProductStatusChanged(ProductUpdatedEvent event) {
         try {
-            kafkaTemplate.send(TOPIC_PRODUCT_VIEWED, String.valueOf(event.getProductId()), event);
+            kafkaTemplate.send(TOPIC_PRODUCT_STATUS_CHANGED,
+                    String.valueOf(event.getProductId()), event);
         } catch (Exception e) {
-            log.error("Failed to publish ProductViewedEvent for product: {}", event.getProductId(), e);
-        }
-    }
-
-    public void publishProductUpdated(ProductUpdatedEvent event) {
-        try {
-            kafkaTemplate.send(TOPIC_PRODUCT_UPDATED, String.valueOf(event.getProductId()), event);
-        } catch (Exception e) {
-            log.error("Failed to publish ProductUpdatedEvent for product: {}", event.getProductId(), e);
+            log.error("Failed to publish product.status-changed for product: {}", event.getProductId(), e);
         }
     }
 }

@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -32,6 +33,11 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
 
     @Query("SELECT p FROM Product p WHERE p.status = 'ACTIVE' ORDER BY p.soldCount DESC")
     Page<Product> findBestSellers(Pageable pageable);
+
+    /** Atomically increases sold_count when an order completes (Kafka order.completed). */
+    @Modifying
+    @Query("UPDATE Product p SET p.soldCount = p.soldCount + :quantity WHERE p.id = :productId")
+    int incrementSoldCount(@Param("productId") Long productId, @Param("quantity") long quantity);
     
     // For similar products, we use a basic query here, but complex logic might be in the service layer using specifications or custom queries
     @Query(value = "SELECT * FROM products p " +
