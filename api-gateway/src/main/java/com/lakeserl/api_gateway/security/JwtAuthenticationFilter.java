@@ -21,15 +21,18 @@ import org.springframework.web.server.ServerWebExchange;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
-import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @Component
-@RequiredArgsConstructor
 public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     private final JwtUtil jwtUtil;
     private final StringRedisTemplate redisTemplate;
+
+    public JwtAuthenticationFilter(JwtUtil jwtUtil, StringRedisTemplate redisTemplate) {
+        this.jwtUtil = jwtUtil;
+        this.redisTemplate = redisTemplate;
+    }
 
     private static final Set<String> PUBLIC_PATHS = Set.of(
             "/api/v1/auth/login",
@@ -45,6 +48,14 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             "/actuator/health"
     );
 
+    // PROJECT_NOTES §6.1: catalogue browsing is public, but only for GET.
+    // Writes on these resources live under /api/v1/admin/** and stay protected.
+    private static final Set<String> PUBLIC_GET_PREFIXES = Set.of(
+            "/api/v1/products",
+            "/api/v1/categories",
+            "/api/v1/brands"
+    );
+
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         String path = exchange.getRequest().getPath().value();
@@ -53,7 +64,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             return chain.filter(exchange);
         }
 
-        if (isPublicPath(path)) {
+        if (isPublicPath(path) || isPublicGetPath(exchange)) {
             return chain.filter(exchange);
         }
 
@@ -110,6 +121,19 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     private boolean isPublicPath(String path) {
         for (String prefix : PUBLIC_PATHS) {
+            if (path.startsWith(prefix)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isPublicGetPath(ServerWebExchange exchange) {
+        if (!HttpMethod.GET.equals(exchange.getRequest().getMethod())) {
+            return false;
+        }
+        String path = exchange.getRequest().getPath().value();
+        for (String prefix : PUBLIC_GET_PREFIXES) {
             if (path.startsWith(prefix)) {
                 return true;
             }

@@ -70,6 +70,26 @@ spring:
           predicates:
             - Path=/api/v1/admin/inventory/**
 
+        - id: order-service-orders
+          uri: lb://order-service
+          predicates:
+            - Path=/api/v1/orders/**
+
+        - id: order-service-admin
+          uri: lb://order-service
+          predicates:
+            - Path=/api/v1/admin/orders/**
+
+        - id: payment-service-payments
+          uri: lb://payment-service
+          predicates:
+            - Path=/api/v1/payments/**
+
+        - id: payment-service-admin
+          uri: lb://payment-service
+          predicates:
+            - Path=/api/v1/admin/payments/**
+
         # Internal endpoints — BLOCKED from external access
         # These should only be accessed via service-to-service calls
         # The gateway rejects any external request to /internal/**
@@ -101,6 +121,20 @@ spring:
           filters:
             - RewritePath=/inventory-service/(?<segment>.*), /${segment}
 
+        - id: order-service-docs
+          uri: lb://order-service
+          predicates:
+            - Path=/order-service/v3/api-docs/**
+          filters:
+            - RewritePath=/order-service/(?<segment>.*), /${segment}
+
+        - id: payment-service-docs
+          uri: lb://payment-service
+          predicates:
+            - Path=/payment-service/v3/api-docs/**
+          filters:
+            - RewritePath=/payment-service/(?<segment>.*), /${segment}
+
 eureka:
   client:
     service-url:
@@ -123,6 +157,10 @@ springdoc:
         url: /product-service/v3/api-docs
       - name: Inventory Service
         url: /inventory-service/v3/api-docs
+      - name: Order Service
+        url: /order-service/v3/api-docs
+      - name: Payment Service
+        url: /payment-service/v3/api-docs
 
 management:
   tracing:
