@@ -9,6 +9,7 @@ import com.lakeserl.order_service.event.payload.inbound.InventoryReservedEvent;
 import com.lakeserl.order_service.repository.OrderRepository;
 import com.lakeserl.order_service.repository.ProcessedKafkaEventRepository;
 import com.lakeserl.order_service.service.OrderStatusService;
+import com.lakeserl.order_service.event.producer.OrderEventProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -28,12 +29,13 @@ public class InventoryEventConsumer {
     private final OrderRepository orderRepository;
     private final OrderStatusService orderStatusService;
     private final ProcessedKafkaEventRepository processedKafkaEventRepository;
+    private final OrderEventProducer orderEventProducer;
     private final ObjectMapper objectMapper;
 
     @KafkaListener(topics = "inventory.reserved", groupId = "order-service")
     @Transactional
     public void handleInventoryReserved(ConsumerRecord<String, String> record, Acknowledgment ack) {
-        String eventId = record.key() != null ? record.key() : UUID.randomUUID().toString();
+        String eventId = record.topic() + ":" + (record.key() != null ? record.key() : UUID.randomUUID().toString());
         log.info("Received inventory.reserved: key={}, value={}", record.key(), record.value());
 
         if (processedKafkaEventRepository.existsById(eventId)) {
@@ -48,6 +50,17 @@ public class InventoryEventConsumer {
             orderRepository.findById(orderId).ifPresent(order -> {
                 if (order.getStatus() == OrderStatus.PENDING) {
                     orderStatusService.transitionTo(order, OrderStatus.CONFIRMED, "system", "Inventory stock reserved successfully");
+                    
+                    // Publish order.confirmed to trigger payment creation
+                    java.util.Map<String, Object> payload = new java.util.HashMap<>();
+                    payload.put("orderId", order.getId().toString());
+                    payload.put("orderNumber", order.getOrderNumber());
+                    payload.put("userId", order.getUserId());
+                    payload.put("totalAmount", order.getTotalAmount());
+                    payload.put("paymentMethod", order.getPaymentMethod().name());
+                    
+                    orderEventProducer.publish("order.confirmed", order.getId().toString(), payload);
+                    log.info("Published order.confirmed outbox event for orderId={}", orderId);
                 }
             });
 
@@ -63,7 +76,7 @@ public class InventoryEventConsumer {
     @KafkaListener(topics = "inventory.insufficient", groupId = "order-service")
     @Transactional
     public void handleInventoryInsufficient(ConsumerRecord<String, String> record, Acknowledgment ack) {
-        String eventId = record.key() != null ? record.key() : UUID.randomUUID().toString();
+        String eventId = record.topic() + ":" + (record.key() != null ? record.key() : UUID.randomUUID().toString());
         log.info("Received inventory.insufficient: key={}, value={}", record.key(), record.value());
 
         if (processedKafkaEventRepository.existsById(eventId)) {
@@ -94,7 +107,7 @@ public class InventoryEventConsumer {
     @KafkaListener(topics = "inventory.reservation-expired", groupId = "order-service")
     @Transactional
     public void handleInventoryReservationExpired(ConsumerRecord<String, String> record, Acknowledgment ack) {
-        String eventId = record.key() != null ? record.key() : UUID.randomUUID().toString();
+        String eventId = record.topic() + ":" + (record.key() != null ? record.key() : UUID.randomUUID().toString());
         log.info("Received inventory.reservation-expired: key={}, value={}", record.key(), record.value());
 
         if (processedKafkaEventRepository.existsById(eventId)) {

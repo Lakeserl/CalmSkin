@@ -10,6 +10,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/internal/orders")
 @RequiredArgsConstructor
@@ -44,7 +46,7 @@ public class InternalOrderController {
 
     @GetMapping("/user/{userId}")
     public ApiResponse<Page<OrderSummaryDTO>> getUserOrdersInternal(
-            @PathVariable Long userId,
+            @PathVariable UUID userId,
             @RequestParam(required = false) String status,
             Pageable pageable) {
         

@@ -3,6 +3,7 @@ package com.lakeserl.order_service.dto.request;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import java.util.List;
+import java.util.UUID;
 
 public record CreateOrderRequest(
     @NotEmpty(message = "Order items list must not be empty")
@@ -10,7 +11,7 @@ public record CreateOrderRequest(
     List<@Valid OrderItemRequest> items,
 
     @NotNull(message = "Address ID is required")
-    Long addressId,
+    UUID addressId,
 
     @NotBlank(message = "Payment method is required")
     String paymentMethod,

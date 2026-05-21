@@ -10,15 +10,17 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
+import java.util.UUID;
+
 @Slf4j
-@Component
+@Component("userServiceApiClient")
 @RequiredArgsConstructor
 public class UserServiceClient {
 
     private final RestClient userServiceClient;
 
     @CircuitBreaker(name = "user-service", fallbackMethod = "fallbackGetAddress")
-    public AddressResponse getAddress(Long userId, Long addressId) {
+    public AddressResponse getAddress(UUID userId, UUID addressId) {
         log.info("Fetching addressId={} for userId={} from user-service", addressId, userId);
         return userServiceClient.get()
                 .uri("/internal/users/{userId}/addresses/{addressId}", userId, addressId)
@@ -27,7 +29,7 @@ public class UserServiceClient {
     }
 
     @CircuitBreaker(name = "user-service", fallbackMethod = "fallbackGetPoints")
-    public PointsResponse getPoints(Long userId) {
+    public PointsResponse getPoints(UUID userId) {
         log.info("Fetching points for userId={} from user-service", userId);
         return userServiceClient.get()
                 .uri("/internal/users/{userId}/points", userId)
@@ -35,12 +37,12 @@ public class UserServiceClient {
                 .body(PointsResponse.class);
     }
 
-    public AddressResponse fallbackGetAddress(Long userId, Long addressId, Throwable t) {
+    public AddressResponse fallbackGetAddress(UUID userId, UUID addressId, Throwable t) {
         log.error("Fallback getAddress userId={}, addressId={} due to: {}", userId, addressId, t.getMessage());
         throw new ServiceUnavailableException("User service address lookup is temporarily unavailable. " + t.getMessage());
     }
 
-    public PointsResponse fallbackGetPoints(Long userId, Throwable t) {
+    public PointsResponse fallbackGetPoints(UUID userId, Throwable t) {
         log.error("Fallback getPoints userId={} due to: {}", userId, t.getMessage());
         throw new ServiceUnavailableException("User service points retrieval is temporarily unavailable. " + t.getMessage());
     }

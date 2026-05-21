@@ -12,15 +12,16 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public interface OrderRepository extends JpaRepository<Order, Long>, JpaSpecificationExecutor<Order> {
     Optional<Order> findByOrderNumber(String orderNumber);
     
-    Optional<Order> findByOrderNumberAndUserId(String orderNumber, Long userId);
-    
-    Page<Order> findByUserId(Long userId, Pageable pageable);
-    
-    Page<Order> findByUserIdAndStatus(Long userId, OrderStatus status, Pageable pageable);
+    Optional<Order> findByOrderNumberAndUserId(String orderNumber, UUID userId);
+
+    Page<Order> findByUserId(UUID userId, Pageable pageable);
+
+    Page<Order> findByUserIdAndStatus(UUID userId, OrderStatus status, Pageable pageable);
     
     List<Order> findByStatusAndCreatedAtBefore(OrderStatus status, LocalDateTime dateTime);
     
@@ -35,7 +36,7 @@ public interface OrderRepository extends JpaRepository<Order, Long>, JpaSpecific
            "AND (CAST(:fromDate AS timestamp) IS NULL OR o.createdAt >= :fromDate) " +
            "AND (CAST(:toDate AS timestamp) IS NULL OR o.createdAt <= :toDate)")
     Page<Order> findAllWithFilters(@Param("status") OrderStatus status,
-                                   @Param("userId") Long userId,
+                                   @Param("userId") UUID userId,
                                    @Param("orderNumber") String orderNumber,
                                    @Param("fromDate") LocalDateTime fromDate,
                                    @Param("toDate") LocalDateTime toDate,

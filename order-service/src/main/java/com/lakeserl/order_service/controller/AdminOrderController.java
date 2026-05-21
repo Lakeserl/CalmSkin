@@ -21,6 +21,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/admin/orders")
@@ -32,7 +33,7 @@ public class AdminOrderController {
     @GetMapping
     public ApiResponse<Page<OrderSummaryDTO>> getAllOrders(
             @RequestParam(required = false) String status,
-            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false) UUID userId,
             @RequestParam(required = false) String orderNumber,
             @RequestParam(required = false) LocalDateTime fromDate,
             @RequestParam(required = false) LocalDateTime toDate,
@@ -102,7 +103,7 @@ public class AdminOrderController {
     @GetMapping("/export")
     public ResponseEntity<String> exportOrders(
             @RequestParam(required = false) String status,
-            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false) UUID userId,
             @RequestParam(required = false) String orderNumber,
             @RequestParam(required = false) LocalDateTime fromDate,
             @RequestParam(required = false) LocalDateTime toDate) {

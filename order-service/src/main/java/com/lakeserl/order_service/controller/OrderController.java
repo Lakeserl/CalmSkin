@@ -17,6 +17,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/api/v1/orders")
 @RequiredArgsConstructor
@@ -26,14 +28,14 @@ public class OrderController {
 
     @PostMapping
     public ApiResponse<OrderDTO> createOrder(@Valid @RequestBody CreateOrderRequest request) {
-        Long userId = getCurrentUserId();
+        UUID userId = getCurrentUserId();
         OrderDTO response = orderService.createOrder(userId, request);
         return ApiResponse.ok("Order placed successfully", response);
     }
 
     @GetMapping("/{orderNumber}")
     public ApiResponse<OrderDTO> getOrderDetail(@PathVariable String orderNumber) {
-        Long userId = getCurrentUserId();
+        UUID userId = getCurrentUserId();
         OrderDTO response = orderService.getOrderDetail(orderNumber, userId);
         return ApiResponse.ok(response);
     }
@@ -45,7 +47,7 @@ public class OrderController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "createdAt,desc") String sort) {
         
-        Long userId = getCurrentUserId();
+        UUID userId = getCurrentUserId();
         OrderStatus orderStatus = null;
         if (status != null && !status.isBlank()) {
             orderStatus = OrderStatus.valueOf(status.toUpperCase());
@@ -73,7 +75,7 @@ public class OrderController {
     public ApiResponse<Void> cancelOrder(
             @PathVariable String orderNumber,
             @Valid @RequestBody CancelOrderRequest request) {
-        Long userId = getCurrentUserId();
+        UUID userId = getCurrentUserId();
         orderService.cancelOrder(orderNumber, userId, request.reason());
         return ApiResponse.ok("Order cancelled successfully", null);
     }
@@ -82,13 +84,13 @@ public class OrderController {
     public ApiResponse<Void> requestReturn(
             @PathVariable String orderNumber,
             @Valid @RequestBody ReturnOrderRequest request) {
-        Long userId = getCurrentUserId();
+        UUID userId = getCurrentUserId();
         orderService.requestReturn(orderNumber, userId, request);
         return ApiResponse.ok("Return request submitted successfully", null);
     }
 
-    private Long getCurrentUserId() {
+    private UUID getCurrentUserId() {
         String principal = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        return Long.parseLong(principal);
+        return UUID.fromString(principal);
     }
 }

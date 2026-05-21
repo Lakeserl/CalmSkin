@@ -13,9 +13,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 @Slf4j
-@Component
+@Component("promotionServiceApiClient")
 @RequiredArgsConstructor
 public class PromotionServiceClient {
 
@@ -49,7 +50,7 @@ public class PromotionServiceClient {
     public static class VoucherValidationRequest {
         private String voucherCode;
         private BigDecimal subtotal;
-        private Long userId;
+        private UUID userId;
     }
 
     @Data

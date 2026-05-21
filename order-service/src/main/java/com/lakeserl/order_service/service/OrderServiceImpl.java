@@ -60,7 +60,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional
-    public OrderDTO createOrder(Long userId, CreateOrderRequest request) {
+    public OrderDTO createOrder(UUID userId, CreateOrderRequest request) {
         // 1. Redis lock
         String lockKey = "lock:order:user:" + userId;
         Boolean acquired = redisTemplate.opsForValue().setIfAbsent(lockKey, "LOCKED", Duration.ofSeconds(5));
@@ -277,7 +277,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional(readOnly = true)
-    public OrderDTO getOrderDetail(String orderNumber, Long userId) {
+    public OrderDTO getOrderDetail(String orderNumber, UUID userId) {
         Order order = orderRepository.findByOrderNumber(orderNumber)
                 .orElseThrow(() -> new OrderNotFoundException("Order with number " + orderNumber + " not found."));
 
@@ -294,7 +294,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<OrderSummaryDTO> getUserOrders(Long userId, OrderStatus status, Pageable pageable) {
+    public Page<OrderSummaryDTO> getUserOrders(UUID userId, OrderStatus status, Pageable pageable) {
         Page<Order> orders;
         if (status == null) {
             orders = orderRepository.findByUserId(userId, pageable);
@@ -306,14 +306,14 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<OrderSummaryDTO> getAllOrdersAdmin(OrderStatus status, Long userId, String orderNumber, LocalDateTime fromDate, LocalDateTime toDate, Pageable pageable) {
+    public Page<OrderSummaryDTO> getAllOrdersAdmin(OrderStatus status, UUID userId, String orderNumber, LocalDateTime fromDate, LocalDateTime toDate, Pageable pageable) {
         Page<Order> orders = orderRepository.findAllWithFilters(status, userId, orderNumber, fromDate, toDate, pageable);
         return orders.map(this::mapToSummaryDTO);
     }
 
     @Override
     @Transactional
-    public void cancelOrder(String orderNumber, Long userId, String reason) {
+    public void cancelOrder(String orderNumber, UUID userId, String reason) {
         Order order = orderRepository.findByOrderNumber(orderNumber)
                 .orElseThrow(() -> new OrderNotFoundException("Order with number " + orderNumber + " not found."));
 
@@ -422,7 +422,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional
-    public void requestReturn(String orderNumber, Long userId, ReturnOrderRequest request) {
+    public void requestReturn(String orderNumber, UUID userId, ReturnOrderRequest request) {
         Order order = orderRepository.findByOrderNumber(orderNumber)
                 .orElseThrow(() -> new OrderNotFoundException("Order with number " + orderNumber + " not found."));
 
@@ -509,7 +509,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional(readOnly = true)
-    public String exportOrdersCsv(OrderStatus status, Long userId, String orderNumber, LocalDateTime fromDate, LocalDateTime toDate) {
+    public String exportOrdersCsv(OrderStatus status, UUID userId, String orderNumber, LocalDateTime fromDate, LocalDateTime toDate) {
         List<Order> orders = orderRepository.findAllWithFilters(status, userId, orderNumber, fromDate, toDate, Pageable.unpaged()).getContent();
         
         StringBuilder csv = new StringBuilder();

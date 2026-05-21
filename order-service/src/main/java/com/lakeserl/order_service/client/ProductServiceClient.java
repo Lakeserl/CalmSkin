@@ -18,7 +18,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 @Slf4j
-@Component
+@Component("productServiceApiClient")
 @RequiredArgsConstructor
 public class ProductServiceClient {
 

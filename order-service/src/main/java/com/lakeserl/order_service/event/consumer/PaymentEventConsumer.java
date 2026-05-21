@@ -37,7 +37,7 @@ public class PaymentEventConsumer {
     @KafkaListener(topics = "payment.completed", groupId = "order-service")
     @Transactional
     public void handlePaymentCompleted(ConsumerRecord<String, String> record, Acknowledgment ack) {
-        String eventId = record.key() != null ? record.key() : UUID.randomUUID().toString();
+        String eventId = record.topic() + ":" + (record.key() != null ? record.key() : UUID.randomUUID().toString());
         log.info("Received payment.completed: key={}, value={}", record.key(), record.value());
 
         if (processedKafkaEventRepository.existsById(eventId)) {
@@ -76,7 +76,7 @@ public class PaymentEventConsumer {
     @KafkaListener(topics = "payment.failed", groupId = "order-service")
     @Transactional
     public void handlePaymentFailed(ConsumerRecord<String, String> record, Acknowledgment ack) {
-        String eventId = record.key() != null ? record.key() : UUID.randomUUID().toString();
+        String eventId = record.topic() + ":" + (record.key() != null ? record.key() : UUID.randomUUID().toString());
         log.info("Received payment.failed: key={}, value={}", record.key(), record.value());
 
         if (processedKafkaEventRepository.existsById(eventId)) {

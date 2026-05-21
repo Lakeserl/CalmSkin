@@ -17,7 +17,7 @@ import org.springframework.web.client.RestClient;
 import java.util.List;
 
 @Slf4j
-@Component
+@Component("inventoryServiceApiClient")
 @RequiredArgsConstructor
 public class InventoryServiceClient {
 

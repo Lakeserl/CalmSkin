@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Data
 @Builder
@@ -17,7 +18,7 @@ import java.time.LocalDateTime;
 public class OrderSummaryDTO {
     private Long id;
     private String orderNumber;
-    private Long userId;
+    private UUID userId;
     private String shippingName;
     private BigDecimal totalAmount;
     private OrderStatus status;

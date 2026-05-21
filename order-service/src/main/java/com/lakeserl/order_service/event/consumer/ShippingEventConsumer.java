@@ -35,7 +35,7 @@ public class ShippingEventConsumer {
     @KafkaListener(topics = "shipping.updated", groupId = "order-service")
     @Transactional
     public void handleShippingUpdated(ConsumerRecord<String, String> record, Acknowledgment ack) {
-        String eventId = record.key() != null ? record.key() : UUID.randomUUID().toString();
+        String eventId = record.topic() + ":" + (record.key() != null ? record.key() : UUID.randomUUID().toString());
         log.info("Received shipping.updated: key={}, value={}", record.key(), record.value());
 
         if (processedKafkaEventRepository.existsById(eventId)) {
