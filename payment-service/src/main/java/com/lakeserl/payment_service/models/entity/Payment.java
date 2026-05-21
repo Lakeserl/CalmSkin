@@ -1,6 +1,7 @@
 package com.lakeserl.payment_service.models.entity;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 import com.lakeserl.payment_service.models.enums.PaymentMethod;
 import com.lakeserl.payment_service.models.enums.PaymentStatus;
@@ -50,7 +51,7 @@ public class Payment {
     private String orderNumber;
 
     @Column(name = "user_id", nullable = false)
-    private Long userId;
+    private UUID userId;
 
     /** Amount in VND (BIGINT). */
     @Column(name = "amount", nullable = false)

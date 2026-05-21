@@ -7,6 +7,7 @@ import static org.mockito.Mockito.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,6 +40,8 @@ import com.lakeserl.payment_service.repository.PaymentRepository;
 
 @ExtendWith(MockitoExtension.class)
 class PaymentServiceImplTest {
+
+    private static final UUID TEST_USER_ID = UUID.fromString("00000000-0000-0000-0000-000000000456");
 
     @Mock
     private PaymentRepository paymentRepository;
@@ -76,7 +79,7 @@ class PaymentServiceImplTest {
     void testProcessOrderConfirmed_NewPayment() {
         // Arrange
         OrderConfirmedEvent event = new OrderConfirmedEvent(
-                "123", "CS-12345", 456L, BigDecimal.valueOf(150000), "VNPAY"
+                "123", "CS-12345", TEST_USER_ID, BigDecimal.valueOf(150000), "VNPAY"
         );
         when(paymentRepository.existsByOrderId(123L)).thenReturn(false);
 
@@ -90,7 +93,7 @@ class PaymentServiceImplTest {
 
         assertEquals(123L, saved.getOrderId());
         assertEquals("CS-12345", saved.getOrderNumber());
-        assertEquals(456L, saved.getUserId());
+        assertEquals(TEST_USER_ID, saved.getUserId());
         assertEquals(150000L, saved.getAmount());
         assertEquals(PaymentMethod.VNPAY, saved.getMethod());
         assertEquals(PaymentStatus.PENDING, saved.getStatus());
@@ -101,7 +104,7 @@ class PaymentServiceImplTest {
     void testProcessOrderConfirmed_AlreadyExists() {
         // Arrange
         OrderConfirmedEvent event = new OrderConfirmedEvent(
-                "123", "CS-12345", 456L, BigDecimal.valueOf(150000), "VNPAY"
+                "123", "CS-12345", TEST_USER_ID, BigDecimal.valueOf(150000), "VNPAY"
         );
         when(paymentRepository.existsByOrderId(123L)).thenReturn(true);
 
@@ -119,7 +122,7 @@ class PaymentServiceImplTest {
         Payment payment = Payment.builder()
                 .orderId(123L)
                 .orderNumber("CS-12345")
-                .userId(456L)
+                .userId(TEST_USER_ID)
                 .amount(0L)
                 .method(PaymentMethod.POINTS)
                 .status(PaymentStatus.PENDING)
@@ -144,7 +147,7 @@ class PaymentServiceImplTest {
         Payment payment = Payment.builder()
                 .orderId(123L)
                 .orderNumber("CS-12345")
-                .userId(456L)
+                .userId(TEST_USER_ID)
                 .amount(150000L)
                 .method(PaymentMethod.COD)
                 .status(PaymentStatus.PENDING)
@@ -168,7 +171,7 @@ class PaymentServiceImplTest {
         Payment payment = Payment.builder()
                 .orderId(123L)
                 .orderNumber("CS-12345")
-                .userId(456L)
+                .userId(TEST_USER_ID)
                 .amount(150000L)
                 .method(PaymentMethod.VNPAY)
                 .status(PaymentStatus.PENDING)
@@ -193,7 +196,7 @@ class PaymentServiceImplTest {
         Payment payment = Payment.builder()
                 .orderId(123L)
                 .orderNumber("CS-12345")
-                .userId(456L)
+                .userId(TEST_USER_ID)
                 .amount(150000L)
                 .method(PaymentMethod.VNPAY)
                 .status(PaymentStatus.PENDING)
@@ -225,7 +228,7 @@ class PaymentServiceImplTest {
         Payment payment = Payment.builder()
                 .orderId(123L)
                 .orderNumber("CS-12345")
-                .userId(456L)
+                .userId(TEST_USER_ID)
                 .amount(150000L)
                 .method(PaymentMethod.VNPAY)
                 .status(PaymentStatus.PENDING)
@@ -256,7 +259,7 @@ class PaymentServiceImplTest {
                 .id(1L)
                 .orderId(123L)
                 .orderNumber("CS-12345")
-                .userId(456L)
+                .userId(TEST_USER_ID)
                 .amount(150000L)
                 .method(PaymentMethod.COD)
                 .status(PaymentStatus.PENDING)
@@ -280,7 +283,7 @@ class PaymentServiceImplTest {
                 .id(1L)
                 .orderId(123L)
                 .orderNumber("CS-12345")
-                .userId(456L)
+                .userId(TEST_USER_ID)
                 .amount(150000L)
                 .method(PaymentMethod.VNPAY) // VNPAY, not COD!
                 .status(PaymentStatus.PENDING)
@@ -302,7 +305,7 @@ class PaymentServiceImplTest {
                 .orderId(123L)
                 .orderNumber("CS-12345")
                 .paymentNumber("PAY-12345")
-                .userId(456L)
+                .userId(TEST_USER_ID)
                 .amount(150000L)
                 .refundedAmount(0L)
                 .method(PaymentMethod.COD)
@@ -333,7 +336,7 @@ class PaymentServiceImplTest {
                 .orderNumber("CS-12345")
                 .paymentNumber("PAY-12345")
                 .gatewayTransactionId("GTXN-123")
-                .userId(456L)
+                .userId(TEST_USER_ID)
                 .amount(150000L)
                 .refundedAmount(0L)
                 .method(PaymentMethod.VNPAY)
@@ -366,7 +369,7 @@ class PaymentServiceImplTest {
                 .orderNumber("CS-12345")
                 .paymentNumber("PAY-12345")
                 .gatewayTransactionId("GTXN-123")
-                .userId(456L)
+                .userId(TEST_USER_ID)
                 .amount(150000L)
                 .refundedAmount(0L)
                 .method(PaymentMethod.VNPAY)
@@ -428,7 +431,7 @@ class PaymentServiceImplTest {
     @Test
     void testProcessOrderCancelled_CompletedPayment() {
         // Arrange
-        OrderCancelledEvent event = new OrderCancelledEvent("123", "CS-12345", 456L, "User change mind");
+        OrderCancelledEvent event = new OrderCancelledEvent("123", "CS-12345", TEST_USER_ID, "User change mind");
         Payment payment = Payment.builder()
                 .id(1L)
                 .orderId(123L)
@@ -455,7 +458,7 @@ class PaymentServiceImplTest {
     @Test
     void testProcessOrderCancelled_PendingPayment() {
         // Arrange
-        OrderCancelledEvent event = new OrderCancelledEvent("123", "CS-12345", 456L, "Timeout");
+        OrderCancelledEvent event = new OrderCancelledEvent("123", "CS-12345", TEST_USER_ID, "Timeout");
         Payment payment = Payment.builder()
                 .id(1L)
                 .orderId(123L)

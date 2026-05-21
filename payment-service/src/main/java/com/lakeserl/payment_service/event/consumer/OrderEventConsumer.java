@@ -33,7 +33,7 @@ public class OrderEventConsumer {
     @KafkaListener(topics = "order.confirmed", groupId = "payment-service")
     @Transactional
     public void handleOrderConfirmed(ConsumerRecord<String, String> record, Acknowledgment ack) {
-        String eventId = record.key() != null ? record.key() : UUID.randomUUID().toString();
+        String eventId = record.topic() + ":" + (record.key() != null ? record.key() : UUID.randomUUID().toString());
         log.info("Received order.confirmed: key={}, value={}", record.key(), record.value());
 
         if (processedKafkaEventRepository.existsById(eventId)) {
@@ -66,7 +66,7 @@ public class OrderEventConsumer {
     @KafkaListener(topics = "order.cancelled", groupId = "payment-service")
     @Transactional
     public void handleOrderCancelled(ConsumerRecord<String, String> record, Acknowledgment ack) {
-        String eventId = record.key() != null ? record.key() : UUID.randomUUID().toString();
+        String eventId = record.topic() + ":" + (record.key() != null ? record.key() : UUID.randomUUID().toString());
         log.info("Received order.cancelled: key={}, value={}", record.key(), record.value());
 
         if (processedKafkaEventRepository.existsById(eventId)) {

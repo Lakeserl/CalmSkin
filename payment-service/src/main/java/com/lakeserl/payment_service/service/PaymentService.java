@@ -1,5 +1,7 @@
 package com.lakeserl.payment_service.service;
 
+import java.util.UUID;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -20,7 +22,7 @@ public interface PaymentService {
     Payment getPaymentByNumber(String paymentNumber);
 
     /** Fetch payments associated with a specific user. */
-    Page<Payment> getPaymentsByUserId(Long userId, Pageable pageable);
+    Page<Payment> getPaymentsByUserId(UUID userId, Pageable pageable);
 
     /** Process gateway webhooks (IPN) with signature verification, deduplication, and Outbox publishing. */
     com.lakeserl.payment_service.gateway.dto.WebhookVerifyResult processWebhook(String gatewayName, java.util.Map<String, String> params);

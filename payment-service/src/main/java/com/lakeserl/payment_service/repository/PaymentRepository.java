@@ -3,6 +3,7 @@ package com.lakeserl.payment_service.repository;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,7 +28,7 @@ public interface PaymentRepository
 
     Optional<Payment> findByGatewayTransactionId(String gatewayTransactionId);
 
-    Page<Payment> findByUserId(Long userId, Pageable pageable);
+    Page<Payment> findByUserId(UUID userId, Pageable pageable);
 
     /** Online payments still PENDING past their expiry deadline. */
     List<Payment> findByStatusAndExpiresAtBefore(PaymentStatus status, LocalDateTime cutoff);

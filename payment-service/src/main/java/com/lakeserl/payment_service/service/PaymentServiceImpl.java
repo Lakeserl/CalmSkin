@@ -195,7 +195,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<Payment> getPaymentsByUserId(Long userId, Pageable pageable) {
+    public Page<Payment> getPaymentsByUserId(UUID userId, Pageable pageable) {
         return paymentRepository.findByUserId(userId, pageable);
     }
 

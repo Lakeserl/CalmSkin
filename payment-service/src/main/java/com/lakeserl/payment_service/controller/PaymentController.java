@@ -23,6 +23,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.lakeserl.payment_service.gateway.dto.WebhookVerifyResult;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 import com.lakeserl.payment_service.exception.PaymentNotFoundException;
 import com.lakeserl.payment_service.models.dto.request.PaymentInitiateRequest;
@@ -73,7 +74,7 @@ public class PaymentController {
     @GetMapping("/{paymentNumber}")
     public ApiResponse<PaymentDTO> getPaymentByNumber(
             @PathVariable String paymentNumber,
-            @RequestHeader(value = "X-User-Id", required = false) Long userId,
+            @RequestHeader(value = "X-User-Id", required = false) UUID userId,
             @RequestHeader(value = "X-User-Role", required = false) String userRole) {
         
         Payment payment = paymentService.getPaymentByNumber(paymentNumber);
@@ -89,7 +90,7 @@ public class PaymentController {
 
     @GetMapping
     public ApiResponse<List<PaymentDTO>> getPaymentsForUser(
-            @RequestHeader("X-User-Id") Long userId,
+            @RequestHeader("X-User-Id") UUID userId,
             Pageable pageable) {
         
         Page<Payment> pageResult = paymentService.getPaymentsByUserId(userId, pageable);
@@ -223,7 +224,7 @@ public class PaymentController {
     public ApiResponse<RefundDTO> refundPayment(
             @PathVariable String paymentNumber,
             @Valid @RequestBody RefundInitiateRequest request,
-            @RequestHeader(value = "X-User-Id", required = false) Long userId,
+            @RequestHeader(value = "X-User-Id", required = false) UUID userId,
             @RequestHeader(value = "X-User-Role", required = false) String userRole) {
         
         Payment payment = paymentService.getPaymentByNumber(paymentNumber);

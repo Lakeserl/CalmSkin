@@ -1,13 +1,14 @@
 package com.lakeserl.payment_service.models.dto.response;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 public record PaymentDTO(
         Long id,
         String paymentNumber,
         Long orderId,
         String orderNumber,
-        Long userId,
+        UUID userId,
         Long amount,
         Long refundedAmount,
         String method,

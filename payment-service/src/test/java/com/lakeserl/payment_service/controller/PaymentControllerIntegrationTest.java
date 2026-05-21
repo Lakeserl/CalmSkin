@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,6 +34,8 @@ import com.lakeserl.payment_service.repository.RefundRepository;
 @ActiveProfiles("test")
 @AutoConfigureMockMvc
 public class PaymentControllerIntegrationTest {
+
+    private static final UUID TEST_USER_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
 
     @Autowired
     private MockMvc mockMvc;
@@ -63,7 +66,7 @@ public class PaymentControllerIntegrationTest {
                 .paymentNumber("PAY-10001")
                 .orderId(123L)
                 .orderNumber("CS-12345")
-                .userId(1L)
+                .userId(TEST_USER_ID)
                 .amount(0L) // Points standard zero amount
                 .method(PaymentMethod.POINTS)
                 .status(PaymentStatus.PENDING)
@@ -89,7 +92,7 @@ public class PaymentControllerIntegrationTest {
                 .paymentNumber("PAY-10002")
                 .orderId(123L)
                 .orderNumber("CS-12345")
-                .userId(1L)
+                .userId(TEST_USER_ID)
                 .amount(150000L)
                 .method(PaymentMethod.VNPAY)
                 .status(PaymentStatus.PENDING)
@@ -115,7 +118,7 @@ public class PaymentControllerIntegrationTest {
                 .paymentNumber("PAY-10003")
                 .orderId(123L)
                 .orderNumber("CS-12345")
-                .userId(1L)
+                .userId(TEST_USER_ID)
                 .amount(150000L)
                 .method(PaymentMethod.VNPAY)
                 .status(PaymentStatus.PENDING)
@@ -138,7 +141,7 @@ public class PaymentControllerIntegrationTest {
                 .paymentNumber("PAY-10004")
                 .orderId(123L)
                 .orderNumber("CS-12345")
-                .userId(1L)
+                .userId(TEST_USER_ID)
                 .amount(150000L)
                 .method(PaymentMethod.VNPAY)
                 .status(PaymentStatus.PENDING)
@@ -159,7 +162,7 @@ public class PaymentControllerIntegrationTest {
                 .paymentNumber("PAY-10005")
                 .orderId(123L)
                 .orderNumber("CS-12345")
-                .userId(1L)
+                .userId(TEST_USER_ID)
                 .amount(150000L)
                 .method(PaymentMethod.VNPAY)
                 .status(PaymentStatus.PENDING)
@@ -192,7 +195,7 @@ public class PaymentControllerIntegrationTest {
                 .paymentNumber("PAY-10006")
                 .orderId(123L)
                 .orderNumber("CS-12345")
-                .userId(1L)
+                .userId(TEST_USER_ID)
                 .amount(150000L)
                 .method(PaymentMethod.VNPAY)
                 .status(PaymentStatus.PENDING)
@@ -215,7 +218,7 @@ public class PaymentControllerIntegrationTest {
                 .paymentNumber("PAY-10007")
                 .orderId(123L)
                 .orderNumber("CS-12345")
-                .userId(1L)
+                .userId(TEST_USER_ID)
                 .amount(150000L)
                 .method(PaymentMethod.COD)
                 .status(PaymentStatus.PENDING)
@@ -255,7 +258,7 @@ public class PaymentControllerIntegrationTest {
                 .paymentNumber("PAY-10008")
                 .orderId(123L)
                 .orderNumber("CS-12345")
-                .userId(1L)
+                .userId(TEST_USER_ID)
                 .amount(150000L)
                 .method(PaymentMethod.POINTS)
                 .status(PaymentStatus.COMPLETED)
@@ -283,7 +286,7 @@ public class PaymentControllerIntegrationTest {
                 .paymentNumber("PAY-10009")
                 .orderId(123L)
                 .orderNumber("CS-12345")
-                .userId(1L)
+                .userId(TEST_USER_ID)
                 .amount(150000L)
                 .method(PaymentMethod.POINTS)
                 .status(PaymentStatus.COMPLETED)
