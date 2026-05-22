@@ -28,11 +28,13 @@ import com.lakeserl.promotion_service.dto.response.PromotionResponse;
 import com.lakeserl.promotion_service.dto.response.PromotionStatsResponse;
 import com.lakeserl.promotion_service.dto.response.PromotionSummaryResponse;
 import com.lakeserl.promotion_service.dto.response.ReleaseResponse;
+import com.lakeserl.promotion_service.client.InventoryServiceClient;
 import com.lakeserl.promotion_service.config.properties.PromotionProperties;
 import com.lakeserl.promotion_service.entity.BundleItem;
 import com.lakeserl.promotion_service.entity.FlashSale;
 import com.lakeserl.promotion_service.entity.FlashSaleReservation;
 import com.lakeserl.promotion_service.entity.Promotion;
+import com.lakeserl.promotion_service.entity.PromotionGift;
 import com.lakeserl.promotion_service.entity.PromotionTier;
 import com.lakeserl.promotion_service.entity.PromotionUsage;
 import com.lakeserl.promotion_service.entity.PromotionUsageLock;
@@ -46,6 +48,7 @@ import com.lakeserl.promotion_service.exception.ResourceNotFoundException;
 import com.lakeserl.promotion_service.repository.BundleItemRepository;
 import com.lakeserl.promotion_service.repository.FlashSaleRepository;
 import com.lakeserl.promotion_service.repository.FlashSaleReservationRepository;
+import com.lakeserl.promotion_service.repository.PromotionGiftRepository;
 import com.lakeserl.promotion_service.repository.PromotionRepository;
 import com.lakeserl.promotion_service.repository.PromotionTierRepository;
 import com.lakeserl.promotion_service.repository.PromotionUsageLockRepository;
@@ -72,11 +75,13 @@ public class PromotionServiceImpl implements PromotionService {
     private final FlashSaleRepository flashSaleRepository;
     private final FlashSaleReservationRepository flashSaleReservationRepository;
     private final BundleItemRepository bundleItemRepository;
+    private final PromotionGiftRepository giftRepository;
     private final PromotionUsageRepository usageRepository;
     private final PromotionUsageLockRepository lockRepository;
     private final PromotionEngine promotionEngine;
     private final PromotionEvaluator evaluator;
     private final PromotionEventProducer eventProducer;
+    private final InventoryServiceClient inventoryClient;
     private final PromotionProperties properties;
 
     // ---- Admin management -------------------------------------------------
@@ -157,6 +162,16 @@ public class PromotionServiceImpl implements PromotionService {
                         .productId(b.productId())
                         .variantId(b.variantId())
                         .quantity(b.quantity() == null ? 1 : b.quantity())
+                        .build());
+            }
+        }
+        if (request.gifts() != null) {
+            for (CreatePromotionRequest.GiftInput g : request.gifts()) {
+                giftRepository.save(PromotionGift.builder()
+                        .promotionId(promotionId)
+                        .productId(g.productId())
+                        .variantId(g.variantId())
+                        .quantity(g.quantity() == null ? 1 : g.quantity())
                         .build());
             }
         }
@@ -272,6 +287,9 @@ public class PromotionServiceImpl implements PromotionService {
                 .map(fp -> new PreviewResponse.FlashSalePrice(
                         fp.productId(), fp.variantId(), fp.originalPrice(), fp.salePrice()))
                 .toList();
+        List<PreviewResponse.GiftItem> freeGifts = result.freeGifts().stream()
+                .map(g -> new PreviewResponse.GiftItem(g.productId(), g.variantId(), g.quantity()))
+                .toList();
 
         BigDecimal cartTotal = context.safeCartTotal();
         BigDecimal shippingFee = context.safeShippingFee();
@@ -279,7 +297,7 @@ public class PromotionServiceImpl implements PromotionService {
         BigDecimal finalTotal = cartTotal.subtract(result.totalDiscount()).max(BigDecimal.ZERO)
                 .add(discountedShipping);
 
-        return new PreviewResponse(applicable, flashPrices, result.totalDiscount(),
+        return new PreviewResponse(applicable, flashPrices, freeGifts, result.totalDiscount(),
                 discountedShipping, finalTotal, result.warnings());
     }
 
@@ -287,6 +305,7 @@ public class PromotionServiceImpl implements PromotionService {
     @Transactional
     public LockResponse lock(LockRequest request) {
         List<Long> lockedIds = new ArrayList<>();
+        List<InventoryServiceClient.ReserveItem> giftItems = new ArrayList<>();
         BigDecimal totalDiscount = BigDecimal.ZERO;
 
         Map<Long, PromotionUsageLock> existing = new LinkedHashMap<>();
@@ -324,9 +343,18 @@ public class PromotionServiceImpl implements PromotionService {
             }
             if (promotion.getType() == PromotionType.FLASH_SALE) {
                 reserveFlashSlots(promotion, request);
+            } else if (promotion.getType() == PromotionType.FREE_GIFT) {
+                for (PromotionGift gift : giftRepository.findByPromotionId(promotionId)) {
+                    giftItems.add(new InventoryServiceClient.ReserveItem(
+                            gift.getProductId(), gift.getVariantId(), gift.getQuantity()));
+                }
             }
             lockedIds.add(promotionId);
             totalDiscount = totalDiscount.add(evaluated.totalBenefit());
+        }
+        if (!giftItems.isEmpty()) {
+            inventoryClient.reserve(
+                    InventoryServiceClient.giftReservationKey(request.orderId()), giftItems);
         }
         return new LockResponse(true, lockedIds, totalDiscount);
     }
@@ -418,6 +446,9 @@ public class PromotionServiceImpl implements PromotionService {
             totalDiscount = totalDiscount.add(lock.getDiscountAmount());
         }
         finalizeFlashReservations(orderId);
+        if (!giftRepository.findByPromotionIdIn(promotionIds).isEmpty()) {
+            inventoryClient.confirm(InventoryServiceClient.giftReservationKey(orderId));
+        }
         lockRepository.deleteAll(locks);
 
         eventProducer.publish("promotion.applied", orderId, Map.of(
@@ -434,6 +465,12 @@ public class PromotionServiceImpl implements PromotionService {
     public ReleaseResponse release(String orderId) {
         List<PromotionUsageLock> locks = lockRepository.findByOrderId(orderId);
         if (!locks.isEmpty()) {
+            List<Long> promotionIds = locks.stream()
+                    .map(PromotionUsageLock::getPromotionId)
+                    .toList();
+            if (!giftRepository.findByPromotionIdIn(promotionIds).isEmpty()) {
+                inventoryClient.release(InventoryServiceClient.giftReservationKey(orderId));
+            }
             lockRepository.deleteAll(locks);
         }
         restoreFlashReservations(orderId);

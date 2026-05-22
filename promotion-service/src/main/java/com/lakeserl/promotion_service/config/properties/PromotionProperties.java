@@ -11,6 +11,7 @@ public record PromotionProperties(
         int voucherClaimRatePerMinute,
         int codeInfoRatePerMinute,
         String signupBonusCode,
+        String birthdayVoucherCode,
         long cacheTtlSeconds,
         long activeListTtlSeconds,
         long flashCacheTtlSeconds

@@ -18,12 +18,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.lakeserl.promotion_service.dto.request.AssignBulkRequest;
 import com.lakeserl.promotion_service.dto.request.CreatePromotionRequest;
+import com.lakeserl.promotion_service.dto.request.GenerateVoucherCodesRequest;
 import com.lakeserl.promotion_service.dto.request.UpdatePromotionRequest;
 import com.lakeserl.promotion_service.dto.request.UpdateStatusRequest;
 import com.lakeserl.promotion_service.dto.response.ApiResponse;
 import com.lakeserl.promotion_service.dto.response.FlashSaleSlotsResponse;
 import com.lakeserl.promotion_service.dto.response.PromotionResponse;
 import com.lakeserl.promotion_service.dto.response.PromotionStatsResponse;
+import com.lakeserl.promotion_service.dto.response.VoucherCodeResponse;
 import com.lakeserl.promotion_service.entity.PromotionUsage;
 import com.lakeserl.promotion_service.enums.PromotionStatus;
 import com.lakeserl.promotion_service.enums.PromotionType;
@@ -106,6 +108,21 @@ public class AdminPromotionController {
     public ApiResponse<Void> assignBulk(@Valid @RequestBody AssignBulkRequest request) {
         int assigned = voucherService.assignBulk(request);
         return ApiResponse.ok("Voucher assigned to " + assigned + " users", null);
+    }
+
+    @PostMapping("/{id}/voucher-codes")
+    @Operation(summary = "Bulk-generate single-use campaign voucher codes")
+    public ApiResponse<List<VoucherCodeResponse>> generateVoucherCodes(
+            @PathVariable Long id,
+            @RequestBody GenerateVoucherCodesRequest request) {
+        List<VoucherCodeResponse> codes = voucherService.generateCodes(id, request);
+        return ApiResponse.ok("Generated " + codes.size() + " voucher codes", codes);
+    }
+
+    @GetMapping("/{id}/voucher-codes")
+    @Operation(summary = "List campaign voucher codes for a promotion")
+    public ApiResponse<List<VoucherCodeResponse>> listVoucherCodes(@PathVariable Long id) {
+        return ApiResponse.ok(voucherService.listCodes(id));
     }
 
     @GetMapping("/flash-sales/{flashSaleId}/slots")

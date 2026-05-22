@@ -14,6 +14,11 @@
       "defaultValue": 0
     },
     {
+      "name": "app.promotion.birthday-voucher-code",
+      "type": "java.lang.String",
+      "sourceType": "com.lakeserl.promotion_service.config.properties.PromotionProperties"
+    },
+    {
       "name": "app.promotion.cache-ttl-seconds",
       "type": "java.lang.Long",
       "sourceType": "com.lakeserl.promotion_service.config.properties.PromotionProperties",

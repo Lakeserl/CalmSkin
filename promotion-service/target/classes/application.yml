@@ -117,6 +117,7 @@ app:
     voucher-claim-rate-per-minute: 10
     code-info-rate-per-minute: 20
     signup-bonus-code: ${SIGNUP_BONUS_CODE:}
+    birthday-voucher-code: ${BIRTHDAY_VOUCHER_CODE:}
     cache-ttl-seconds: 300
     active-list-ttl-seconds: 60
     flash-cache-ttl-seconds: 30
