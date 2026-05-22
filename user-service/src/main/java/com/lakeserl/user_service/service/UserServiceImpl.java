@@ -95,6 +95,11 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public List<UUID> findUserIdsByBirthday(int month, int day) {
+        return userRepository.findUserIdsByBirthday(month, day);
+    }
+
+    @Override
     @Transactional
     public String uploadAvatar(UUID userId, org.springframework.web.multipart.MultipartFile file) {
         User user = findById(userId);

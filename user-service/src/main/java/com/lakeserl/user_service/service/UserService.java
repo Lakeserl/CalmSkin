@@ -28,4 +28,6 @@ public interface UserService {
     User findById(UUID userId);
 
     List<UserInternalDTO> findAllByIds(List<UUID> ids);
+
+    List<UUID> findUserIdsByBirthday(int month, int day);
 }

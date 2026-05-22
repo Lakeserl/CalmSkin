@@ -48,9 +48,23 @@ public class InternalUserController {
         return ResponseEntity.ok(ApiResponse.ok(addressService.getDefaultAddress(id)));
     }
 
+    @GetMapping("/{userId}/addresses/{addressId}")
+    public ResponseEntity<ApiResponse<AddressResponse>> getAddressById(
+            @PathVariable UUID userId,
+            @PathVariable UUID addressId) {
+        return ResponseEntity.ok(ApiResponse.ok(addressService.getAddressById(userId, addressId)));
+    }
+
     @GetMapping("/{id}/points")
     public ResponseEntity<ApiResponse<UserPoint>> getPoints(@PathVariable UUID id) {
         return ResponseEntity.ok(ApiResponse.ok(loyaltyService.getPoints(id)));
+    }
+
+    @GetMapping("/by-birthday")
+    public ResponseEntity<ApiResponse<List<UUID>>> getUsersByBirthday(
+            @RequestParam int month,
+            @RequestParam int day) {
+        return ResponseEntity.ok(ApiResponse.ok(userService.findUserIdsByBirthday(month, day)));
     }
 
     @GetMapping("/batch")

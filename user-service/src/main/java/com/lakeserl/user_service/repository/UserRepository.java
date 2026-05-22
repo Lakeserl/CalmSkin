@@ -1,5 +1,6 @@
 package com.lakeserl.user_service.repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -30,5 +31,9 @@ public interface UserRepository extends JpaRepository<User, UUID> {
             "ELSE false " +
             "END FROM User u WHERE u.phoneNumber = :phoneNumber")
     Boolean existsByPhoneNumber(@Param("phoneNumber") String phoneNumber);
+
+    @Query("SELECT u.id FROM User u WHERE EXTRACT(MONTH FROM u.dateOfBirth) = :month "
+            + "AND EXTRACT(DAY FROM u.dateOfBirth) = :day")
+    List<UUID> findUserIdsByBirthday(@Param("month") int month, @Param("day") int day);
 
 }

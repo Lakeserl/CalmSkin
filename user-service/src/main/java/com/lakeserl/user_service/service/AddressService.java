@@ -97,6 +97,12 @@ public class AddressService {
                 .orElse(null);
     }
 
+    public AddressResponse getAddressById(UUID userId, UUID addressId) {
+        return addressRepository.findByIdAndUserId(addressId, userId)
+                .map(addressMapper::toResponse)
+                .orElseThrow(() -> new UserNotFoundException("Address not found"));
+    }
+
     private void clearDefaultAddress(UUID userId) {
         addressRepository.findByUserIdAndIsDefaultTrue(userId)
                 .ifPresent(a -> {
