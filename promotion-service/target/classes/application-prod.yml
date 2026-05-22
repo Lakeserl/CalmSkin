@@ -1,0 +1,15 @@
+spring:
+  config:
+    activate:
+      on-profile: prod
+  jpa:
+    show-sql: false
+
+logging:
+  level:
+    com.lakeserl.promotion_service: INFO
+
+management:
+  tracing:
+    sampling:
+      probability: 0.1

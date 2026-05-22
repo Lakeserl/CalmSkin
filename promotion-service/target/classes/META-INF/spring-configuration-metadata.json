@@ -1,0 +1,53 @@
+{
+  "groups": [
+    {
+      "name": "app.promotion",
+      "type": "com.lakeserl.promotion_service.config.properties.PromotionProperties",
+      "sourceType": "com.lakeserl.promotion_service.config.properties.PromotionProperties"
+    }
+  ],
+  "properties": [
+    {
+      "name": "app.promotion.active-list-ttl-seconds",
+      "type": "java.lang.Long",
+      "sourceType": "com.lakeserl.promotion_service.config.properties.PromotionProperties",
+      "defaultValue": 0
+    },
+    {
+      "name": "app.promotion.cache-ttl-seconds",
+      "type": "java.lang.Long",
+      "sourceType": "com.lakeserl.promotion_service.config.properties.PromotionProperties",
+      "defaultValue": 0
+    },
+    {
+      "name": "app.promotion.code-info-rate-per-minute",
+      "type": "java.lang.Integer",
+      "sourceType": "com.lakeserl.promotion_service.config.properties.PromotionProperties",
+      "defaultValue": 0
+    },
+    {
+      "name": "app.promotion.flash-cache-ttl-seconds",
+      "type": "java.lang.Long",
+      "sourceType": "com.lakeserl.promotion_service.config.properties.PromotionProperties",
+      "defaultValue": 0
+    },
+    {
+      "name": "app.promotion.lock-ttl-minutes",
+      "type": "java.lang.Integer",
+      "sourceType": "com.lakeserl.promotion_service.config.properties.PromotionProperties",
+      "defaultValue": 0
+    },
+    {
+      "name": "app.promotion.signup-bonus-code",
+      "type": "java.lang.String",
+      "sourceType": "com.lakeserl.promotion_service.config.properties.PromotionProperties"
+    },
+    {
+      "name": "app.promotion.voucher-claim-rate-per-minute",
+      "type": "java.lang.Integer",
+      "sourceType": "com.lakeserl.promotion_service.config.properties.PromotionProperties",
+      "defaultValue": 0
+    }
+  ],
+  "hints": []
+}
