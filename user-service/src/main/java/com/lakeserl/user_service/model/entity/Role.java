@@ -17,7 +17,8 @@ import jakarta.persistence.*;
 public class Role {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "role_seq")
+    @SequenceGenerator(name = "role_seq", sequenceName = "hibernate_sequence", allocationSize = 1)
     @Column(name = "id", unique = true, nullable = false, updatable = false)
     private Long id;
 
