@@ -26,12 +26,12 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class UserServiceClient {
 
-    private final RestClient userServiceClient;
+    private final RestClient userServiceRestClient;
 
     /** Returns ids of users whose date of birth falls on the given month/day. */
     @CircuitBreaker(name = "user-service", fallbackMethod = "fallbackBirthday")
     public List<UUID> findUserIdsByBirthday(int month, int day) {
-        ApiEnvelope<List<UUID>> response = userServiceClient.get()
+        ApiEnvelope<List<UUID>> response = userServiceRestClient.get()
                 .uri(uri -> uri.path("/internal/users/by-birthday")
                         .queryParam("month", month)
                         .queryParam("day", day)
@@ -49,7 +49,7 @@ public class UserServiceClient {
     /** Loads a user; returns null when the user cannot be fetched. */
     @CircuitBreaker(name = "user-service", fallbackMethod = "fallbackGetUser")
     public UserView getUser(UUID userId) {
-        ApiEnvelope<UserView> response = userServiceClient.get()
+        ApiEnvelope<UserView> response = userServiceRestClient.get()
                 .uri("/internal/users/{id}", userId)
                 .retrieve()
                 .body(new ParameterizedTypeReference<ApiEnvelope<UserView>>() {});

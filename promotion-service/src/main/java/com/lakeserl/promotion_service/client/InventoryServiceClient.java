@@ -21,7 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class InventoryServiceClient {
 
-    private final RestClient inventoryServiceClient;
+    private final RestClient inventoryServiceRestClient;
 
     /** Reservation key suffix that isolates promotion holds from cart holds. */
     public static String giftReservationKey(String orderId) {
@@ -30,7 +30,7 @@ public class InventoryServiceClient {
 
     @CircuitBreaker(name = "inventory-service", fallbackMethod = "fallbackReserve")
     public void reserve(String reservationKey, List<ReserveItem> items) {
-        inventoryServiceClient.post()
+        inventoryServiceRestClient.post()
                 .uri("/internal/inventory/reserve")
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(new ReserveStockRequest(reservationKey, items))
@@ -46,7 +46,7 @@ public class InventoryServiceClient {
 
     @CircuitBreaker(name = "inventory-service", fallbackMethod = "fallbackOrderRef")
     public void confirm(String reservationKey) {
-        inventoryServiceClient.post()
+        inventoryServiceRestClient.post()
                 .uri("/internal/inventory/confirm")
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(new OrderRef(reservationKey))
@@ -56,7 +56,7 @@ public class InventoryServiceClient {
 
     @CircuitBreaker(name = "inventory-service", fallbackMethod = "fallbackOrderRef")
     public void release(String reservationKey) {
-        inventoryServiceClient.post()
+        inventoryServiceRestClient.post()
                 .uri("/internal/inventory/release")
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(new OrderRef(reservationKey))

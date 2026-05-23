@@ -15,30 +15,40 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 public class RoleHeaderAuthenticationFilter extends OncePerRequestFilter {
 
+    private final String expectedGatewaySecret;
+
+    public RoleHeaderAuthenticationFilter(String expectedGatewaySecret) {
+        this.expectedGatewaySecret = expectedGatewaySecret;
+    }
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-        String roleHeader = request.getHeader("X-User-Role");
-        String userId = request.getHeader("X-User-Id");
+        String gatewaySecret = request.getHeader("X-Gateway-Secret");
 
-        if (userId != null && roleHeader != null && !roleHeader.isBlank()) {
-            List<SimpleGrantedAuthority> authorities;
-            if (roleHeader.contains(",")) {
-                authorities = Arrays.stream(roleHeader.split(","))
-                        .map(role -> {
-                            String normalized = role.trim().toUpperCase();
-                            return new SimpleGrantedAuthority(normalized.startsWith("ROLE_") ? normalized : "ROLE_" + normalized);
-                        })
-                        .collect(Collectors.toList());
-            } else {
-                String normalized = roleHeader.trim().toUpperCase();
-                String authority = normalized.startsWith("ROLE_") ? normalized : "ROLE_" + normalized;
-                authorities = List.of(new SimpleGrantedAuthority(authority));
+        if (expectedGatewaySecret.equals(gatewaySecret)) {
+            String roleHeader = request.getHeader("X-User-Role");
+            String userId = request.getHeader("X-User-Id");
+
+            if (userId != null && roleHeader != null && !roleHeader.isBlank()) {
+                List<SimpleGrantedAuthority> authorities;
+                if (roleHeader.contains(",")) {
+                    authorities = Arrays.stream(roleHeader.split(","))
+                            .map(role -> {
+                                String normalized = role.trim().toUpperCase();
+                                return new SimpleGrantedAuthority(normalized.startsWith("ROLE_") ? normalized : "ROLE_" + normalized);
+                            })
+                            .collect(Collectors.toList());
+                } else {
+                    String normalized = roleHeader.trim().toUpperCase();
+                    String authority = normalized.startsWith("ROLE_") ? normalized : "ROLE_" + normalized;
+                    authorities = List.of(new SimpleGrantedAuthority(authority));
+                }
+
+                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                        userId, null, authorities);
+                SecurityContextHolder.getContext().setAuthentication(authentication);
             }
-
-            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                    userId, null, authorities);
-            SecurityContextHolder.getContext().setAuthentication(authentication);
         }
 
         filterChain.doFilter(request, response);

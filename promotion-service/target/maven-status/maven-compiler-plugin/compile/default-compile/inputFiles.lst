@@ -1,6 +1,9 @@
 /home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/PromotionServiceApplication.java
+/home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/client/InventoryServiceClient.java
+/home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/client/UserServiceClient.java
 /home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/config/KafkaConfig.java
 /home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/config/RedisConfig.java
+/home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/config/RestClientConfig.java
 /home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/config/RoleHeaderAuthenticationFilter.java
 /home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/config/SecurityConfig.java
 /home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/config/SwaggerConfig.java
@@ -13,6 +16,7 @@
 /home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/dto/request/AssignBulkRequest.java
 /home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/dto/request/CartItemDto.java
 /home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/dto/request/CreatePromotionRequest.java
+/home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/dto/request/GenerateVoucherCodesRequest.java
 /home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/dto/request/LockRequest.java
 /home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/dto/request/OrderRefRequest.java
 /home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/dto/request/PreviewRequest.java
@@ -31,6 +35,7 @@
 /home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/dto/response/PromotionStatsResponse.java
 /home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/dto/response/PromotionSummaryResponse.java
 /home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/dto/response/ReleaseResponse.java
+/home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/dto/response/VoucherCodeResponse.java
 /home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/dto/response/VoucherInfoResponse.java
 /home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/dto/response/VoucherValidationResponse.java
 /home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/entity/BundleItem.java
@@ -39,15 +44,18 @@
 /home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/entity/OutboxEvent.java
 /home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/entity/ProcessedKafkaEvent.java
 /home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/entity/Promotion.java
+/home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/entity/PromotionGift.java
 /home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/entity/PromotionTier.java
 /home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/entity/PromotionUsage.java
 /home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/entity/PromotionUsageLock.java
 /home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/entity/VoucherAssignment.java
+/home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/entity/VoucherCode.java
 /home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/enums/DiscountType.java
 /home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/enums/OutboxStatus.java
 /home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/enums/PromotionStatus.java
 /home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/enums/PromotionType.java
 /home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/enums/UsageStatus.java
+/home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/enums/VoucherCodeStatus.java
 /home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/event/consumer/OrderEventConsumer.java
 /home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/event/consumer/UserEventConsumer.java
 /home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/event/producer/PromotionEventProducer.java
@@ -64,11 +72,14 @@
 /home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/repository/FlashSaleReservationRepository.java
 /home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/repository/OutboxRepository.java
 /home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/repository/ProcessedKafkaEventRepository.java
+/home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/repository/PromotionGiftRepository.java
 /home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/repository/PromotionRepository.java
 /home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/repository/PromotionTierRepository.java
 /home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/repository/PromotionUsageLockRepository.java
 /home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/repository/PromotionUsageRepository.java
 /home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/repository/VoucherAssignmentRepository.java
+/home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/repository/VoucherCodeRepository.java
+/home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/scheduler/BirthdayVoucherScheduler.java
 /home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/scheduler/OutboxEventPublisher.java
 /home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/scheduler/PromotionStatusScheduler.java
 /home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/scheduler/UsageLockCleanup.java
@@ -88,6 +99,7 @@
 /home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/service/engine/calculator/DiscountBreakdown.java
 /home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/service/engine/calculator/DiscountCalculator.java
 /home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/service/engine/calculator/FixedAmountCalculator.java
+/home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/service/engine/calculator/FreeGiftCalculator.java
 /home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/service/engine/calculator/FreeShippingCalculator.java
 /home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/service/engine/calculator/PercentageCalculator.java
 /home/lakeserl/Documents/Github/CalmSkin/promotion-service/src/main/java/com/lakeserl/promotion_service/service/engine/validator/MinOrderValueValidator.java
