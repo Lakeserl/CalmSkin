@@ -89,9 +89,8 @@ public class AuthService {
         String otp = generateOtp();
         redisTokenService.saveOtp(user.getId().toString(), "EMAIL_VERIFY", DigestUtils.sha256Hex(otp), otpExpiryMinutes);
 
-        kafkaProducer.sendUserRegistered(user.getId().toString(), user.getEmail(), otp);
+        kafkaProducer.sendUserRegistered(user.getId().toString(), user.getEmail());
         log.info("User registered: {}", maskEmail(user.getEmail()));
-        log.info("DEVELOPMENT MODE - OTP for {}: {}", user.getEmail(), otp);
     }
 
     @Transactional
@@ -99,28 +98,36 @@ public class AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
 
-        String stored = redisTokenService.getOtp(user.getId().toString(), "EMAIL_VERIFY");
+        String userId = user.getId().toString();
+        if (redisTokenService.isOtpLockedOut(userId, "EMAIL_VERIFY")) {
+            throw new OtpInvalidException("Too many failed attempts. Please request a new verification email.");
+        }
+
+        String stored = redisTokenService.getOtp(userId, "EMAIL_VERIFY");
         if (stored == null) throw new OtpExpiredException();
-        if (!stored.equals(DigestUtils.sha256Hex(otp))) throw new OtpInvalidException();
+        if (!stored.equals(DigestUtils.sha256Hex(otp))) {
+            redisTokenService.incrementOtpAttempt(userId, "EMAIL_VERIFY");
+            throw new OtpInvalidException();
+        }
 
         user.setStatus(Status.ACTIVE);
         userRepository.save(user);
-        redisTokenService.deleteOtp(user.getId().toString(), "EMAIL_VERIFY");
+        redisTokenService.deleteOtp(userId, "EMAIL_VERIFY");
+        redisTokenService.resetOtpAttempt(userId, "EMAIL_VERIFY");
 
-        kafkaProducer.sendUserEmailVerified(user.getId().toString(), user.getEmail());
+        kafkaProducer.sendUserEmailVerified(userId, user.getEmail());
     }
 
     @Transactional
     public void resendVerification(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UserNotFoundException("User not found"));
-        if (user.getStatus() != Status.UNVERIFIED) {
-            throw new InvalidPasswordException("Account already verified");
-        }
-
-        String otp = generateOtp();
-        redisTokenService.saveOtp(user.getId().toString(), "EMAIL_VERIFY", DigestUtils.sha256Hex(otp), otpExpiryMinutes);
-        kafkaProducer.sendUserRegistered(user.getId().toString(), user.getEmail(), otp);
+        userRepository.findByEmail(email).ifPresent(user -> {
+            if (user.getStatus() != Status.UNVERIFIED) {
+                return;
+            }
+            String otp = generateOtp();
+            redisTokenService.saveOtp(user.getId().toString(), "EMAIL_VERIFY", DigestUtils.sha256Hex(otp), otpExpiryMinutes);
+            kafkaProducer.sendUserRegistered(user.getId().toString(), user.getEmail());
+        });
     }
 
     public AuthResponse login(Login request, String ipAddress, String deviceInfo) {
@@ -179,7 +186,7 @@ public class AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
 
-        // Token Rotation: revoke cũ, issue mới
+        // Token rotation: revoke old, issue new
         redisTokenService.revokeRefreshToken(userId, oldHash);
         refreshTokenRepository.findByTokenAndRevokedFalse(oldHash)
                 .ifPresent(rt -> { rt.setRevoked(true); refreshTokenRepository.save(rt); });
@@ -203,6 +210,7 @@ public class AuthService {
                 .build();
     }
 
+    @Transactional
     public void logout(String accessToken) {
         String jti = jwtServices.extractJti(accessToken);
         long ttl = (jwtServices.extractExpiration(accessToken).getTime() - System.currentTimeMillis()) / 1000;
@@ -211,8 +219,9 @@ public class AuthService {
         }
 
         String userId = jwtServices.extractUserId(accessToken);
-        String hash = jwtServices.hash(accessToken);
-        redisTokenService.revokeRefreshToken(userId, hash);
+        redisTokenService.revokeAllRefreshTokens(userId);
+        refreshTokenRepository.findByUserIdAndRevokedFalse(UUID.fromString(userId))
+                .forEach(rt -> { rt.setRevoked(true); refreshTokenRepository.save(rt); });
     }
 
     @Transactional
@@ -229,12 +238,11 @@ public class AuthService {
     }
 
     public void forgotPassword(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UserNotFoundException("User not found"));
-
-        String otp = generateOtp();
-        redisTokenService.saveOtp(user.getId().toString(), "RESET_PASSWORD", DigestUtils.sha256Hex(otp), otpExpiryMinutes);
-        kafkaProducer.sendPasswordReset(user.getId().toString(), user.getEmail(), otp);
+        userRepository.findByEmail(email).ifPresent(user -> {
+            String otp = generateOtp();
+            redisTokenService.saveOtp(user.getId().toString(), "RESET_PASSWORD", DigestUtils.sha256Hex(otp), otpExpiryMinutes);
+            kafkaProducer.sendPasswordReset(user.getId().toString(), user.getEmail(), otp);
+        });
     }
 
     @Transactional
@@ -242,26 +250,32 @@ public class AuthService {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
 
-        String stored = redisTokenService.getOtp(user.getId().toString(), "RESET_PASSWORD");
+        String userId = user.getId().toString();
+        if (redisTokenService.isOtpLockedOut(userId, "RESET_PASSWORD")) {
+            throw new OtpInvalidException("Too many failed attempts. Please request a new password reset.");
+        }
+
+        String stored = redisTokenService.getOtp(userId, "RESET_PASSWORD");
         if (stored == null) throw new OtpExpiredException();
-        if (!stored.equals(DigestUtils.sha256Hex(request.getOtp()))) throw new OtpInvalidException();
+        if (!stored.equals(DigestUtils.sha256Hex(request.getOtp()))) {
+            redisTokenService.incrementOtpAttempt(userId, "RESET_PASSWORD");
+            throw new OtpInvalidException();
+        }
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
-        redisTokenService.deleteOtp(user.getId().toString(), "RESET_PASSWORD");
-
-        // Revoke all sessions
-        redisTokenService.revokeAllRefreshTokens(user.getId().toString());
+        redisTokenService.deleteOtp(userId, "RESET_PASSWORD");
+        redisTokenService.resetOtpAttempt(userId, "RESET_PASSWORD");
+        redisTokenService.revokeAllRefreshTokens(userId);
     }
 
     public void sendLoginOtp(String phoneNumber) {
-        User user = userRepository.findByPhoneNumber(phoneNumber)
-                .orElseThrow(() -> new UserNotFoundException("User not found"));
-        if (user.getStatus() == Status.BANNED) throw new AccountBannedException();
-
-        String otp = generateOtp();
-        redisTokenService.saveOtp(user.getId().toString(), "LOGIN_OTP", DigestUtils.sha256Hex(otp), otpExpiryMinutes);
-        kafkaProducer.sendPasswordReset(user.getId().toString(), user.getEmail(), otp);
+        userRepository.findByPhoneNumber(phoneNumber).ifPresent(user -> {
+            if (user.getStatus() == Status.BANNED) return;
+            String otp = generateOtp();
+            redisTokenService.saveOtp(user.getId().toString(), "LOGIN_OTP", DigestUtils.sha256Hex(otp), otpExpiryMinutes);
+            kafkaProducer.sendPasswordReset(user.getId().toString(), user.getEmail(), otp);
+        });
     }
 
     public AuthResponse loginWithOtp(String phoneNumber, String otp, String ipAddress, String deviceInfo) {
@@ -269,11 +283,20 @@ public class AuthService {
                 .orElseThrow(() -> new InvalidCredentialsException());
         if (user.getStatus() == Status.BANNED) throw new AccountBannedException();
 
-        String stored = redisTokenService.getOtp(user.getId().toString(), "LOGIN_OTP");
-        if (stored == null) throw new OtpExpiredException();
-        if (!stored.equals(DigestUtils.sha256Hex(otp))) throw new OtpInvalidException();
+        String userId = user.getId().toString();
+        if (redisTokenService.isOtpLockedOut(userId, "LOGIN_OTP")) {
+            throw new OtpInvalidException("Too many failed attempts. Please request a new OTP.");
+        }
 
-        redisTokenService.deleteOtp(user.getId().toString(), "LOGIN_OTP");
+        String stored = redisTokenService.getOtp(userId, "LOGIN_OTP");
+        if (stored == null) throw new OtpExpiredException();
+        if (!stored.equals(DigestUtils.sha256Hex(otp))) {
+            redisTokenService.incrementOtpAttempt(userId, "LOGIN_OTP");
+            throw new OtpInvalidException();
+        }
+
+        redisTokenService.deleteOtp(userId, "LOGIN_OTP");
+        redisTokenService.resetOtpAttempt(userId, "LOGIN_OTP");
 
         if (user.getStatus() == Status.UNVERIFIED) {
             user.setStatus(Status.ACTIVE);

@@ -51,11 +51,13 @@ public class AddressService {
         address.setUser(user);
         address.setCreatedAt(LocalDateTime.now());
 
+        UserAddress saved = addressRepository.save(address);
         if (request.isDefault()) {
-            clearDefaultAddress(userId);
+            addressRepository.atomicSetDefault(userId, saved.getId());
+            saved.setDefault(true);
         }
 
-        return addressMapper.toResponse(addressRepository.save(address));
+        return addressMapper.toResponse(saved);
     }
 
     @Transactional
@@ -66,12 +68,13 @@ public class AddressService {
         addressMapper.updateFromRequest(request, address);
         address.setUpdatedAt(LocalDateTime.now());
 
+        UserAddress saved = addressRepository.save(address);
         if (request.isDefault()) {
-            clearDefaultAddress(userId);
-            address.setDefault(true);
+            addressRepository.atomicSetDefault(userId, saved.getId());
+            saved.setDefault(true);
         }
 
-        return addressMapper.toResponse(addressRepository.save(address));
+        return addressMapper.toResponse(saved);
     }
 
     @Transactional
@@ -86,9 +89,9 @@ public class AddressService {
         UserAddress address = addressRepository.findByIdAndUserId(addressId, userId)
                 .orElseThrow(() -> new UserNotFoundException("Address not found"));
 
-        clearDefaultAddress(userId);
+        addressRepository.atomicSetDefault(userId, addressId);
         address.setDefault(true);
-        return addressMapper.toResponse(addressRepository.save(address));
+        return addressMapper.toResponse(address);
     }
 
     public AddressResponse getDefaultAddress(UUID userId) {
@@ -103,11 +106,4 @@ public class AddressService {
                 .orElseThrow(() -> new UserNotFoundException("Address not found"));
     }
 
-    private void clearDefaultAddress(UUID userId) {
-        addressRepository.findByUserIdAndIsDefaultTrue(userId)
-                .ifPresent(a -> {
-                    a.setDefault(false);
-                    addressRepository.save(a);
-                });
-    }
 }

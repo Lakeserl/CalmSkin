@@ -64,7 +64,6 @@ public class SecurityConfig {
                     "/actuator/**"
                 ).permitAll()
 
-                // Internal APIs — chỉ service-to-service
                 .requestMatchers("/internal/**").permitAll()
 
                 // Admin endpoints

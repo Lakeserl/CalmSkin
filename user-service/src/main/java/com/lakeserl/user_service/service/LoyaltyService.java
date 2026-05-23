@@ -18,7 +18,9 @@ import com.lakeserl.user_service.repository.UserPointRepository;
 import com.lakeserl.user_service.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class LoyaltyService {
@@ -38,6 +40,12 @@ public class LoyaltyService {
 
     @Transactional
     public void earnPoints(UUID userId, int points, String referenceId, String referenceType, String description) {
+        if (pointTransactionRepository.existsByUserIdAndReferenceIdAndReferenceTypeAndType(
+                userId, referenceId, referenceType, PointTransactionType.EARN)) {
+            log.warn("Duplicate earnPoints skipped: userId={} referenceId={}", userId, referenceId);
+            return;
+        }
+
         UserPoint userPoint = getPoints(userId);
         userPoint.setTotalPoints(userPoint.getTotalPoints() + points);
         userPoint.setTier(calculateTier(userPoint.getTotalPoints()));
@@ -58,6 +66,12 @@ public class LoyaltyService {
 
     @Transactional
     public void redeemPoints(UUID userId, int points, String referenceId, String referenceType, String description) {
+        if (pointTransactionRepository.existsByUserIdAndReferenceIdAndReferenceTypeAndType(
+                userId, referenceId, referenceType, PointTransactionType.REDEEM)) {
+            log.warn("Duplicate redeemPoints skipped: userId={} referenceId={}", userId, referenceId);
+            return;
+        }
+
         UserPoint userPoint = getPoints(userId);
         userPoint.setTotalPoints(Math.max(0, userPoint.getTotalPoints() - points));
         userPoint.setTier(calculateTier(userPoint.getTotalPoints()));

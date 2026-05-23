@@ -9,8 +9,11 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.lakeserl.user_service.model.entity.User;
+import com.lakeserl.user_service.model.enums.Status;
 
 public interface UserRepository extends JpaRepository<User, UUID> {
+
+    long countByStatus(Status status);
 
     @Query("SELECT u FROM User u WHERE u.fullName = :fullName")
     Optional<User> findByName(String fullName);

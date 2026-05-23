@@ -1,6 +1,7 @@
 package com.lakeserl.user_service.service;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -20,10 +21,16 @@ import com.lakeserl.user_service.model.enums.Status;
 import com.lakeserl.user_service.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
+
+    private static final Set<String> ALLOWED_MIME_TYPES = Set.of(
+            "image/jpeg", "image/png", "image/webp"
+    );
 
     private final UserRepository userRepository;
     private final UserMapper userMapper;
@@ -104,15 +111,20 @@ public class UserServiceImpl implements UserService {
     public String uploadAvatar(UUID userId, org.springframework.web.multipart.MultipartFile file) {
         User user = findById(userId);
 
-        String contentType = file.getContentType();
-        if (contentType == null || !contentType.matches("image/(jpeg|png|webp)")) {
-            throw new InvalidPasswordException("Only JPG, PNG, WEBP images allowed");
-        }
         if (file.getSize() > 5 * 1024 * 1024) {
             throw new InvalidPasswordException("File size must be under 5MB");
         }
 
-        String avatarUrl = "/avatars/" + userId + "/" + file.getOriginalFilename();
+        // Validate by magic bytes, not the user-supplied Content-Type header
+        String detectedMime = detectMimeType(file);
+        if (!ALLOWED_MIME_TYPES.contains(detectedMime)) {
+            throw new InvalidPasswordException("Only JPG, PNG, WEBP images allowed");
+        }
+
+        // Never use the original filename — always generate a safe random name
+        String extension = detectedMime.substring(detectedMime.indexOf('/') + 1).replace("jpeg", "jpg");
+        String safeFilename = UUID.randomUUID() + "." + extension;
+        String avatarUrl = "/avatars/" + userId + "/" + safeFilename;
         user.setAvatarUrl(avatarUrl);
         userRepository.save(user);
         return avatarUrl;
@@ -124,6 +136,32 @@ public class UserServiceImpl implements UserService {
         User user = findById(userId);
         user.setAvatarUrl(null);
         userRepository.save(user);
+    }
+
+    private String detectMimeType(org.springframework.web.multipart.MultipartFile file) {
+        try (java.io.InputStream in = file.getInputStream()) {
+            byte[] h = in.readNBytes(12);
+            if (h.length >= 3
+                    && (h[0] & 0xFF) == 0xFF
+                    && (h[1] & 0xFF) == 0xD8
+                    && (h[2] & 0xFF) == 0xFF) {
+                return "image/jpeg";
+            }
+            if (h.length >= 8
+                    && h[0] == (byte) 0x89 && h[1] == 'P' && h[2] == 'N' && h[3] == 'G'
+                    && h[4] == 0x0D && h[5] == 0x0A && h[6] == 0x1A && h[7] == 0x0A) {
+                return "image/png";
+            }
+            // WebP: "RIFF" at 0-3 and "WEBP" at 8-11
+            if (h.length >= 12
+                    && h[0] == 'R' && h[1] == 'I' && h[2] == 'F' && h[3] == 'F'
+                    && h[8] == 'W' && h[9] == 'E' && h[10] == 'B' && h[11] == 'P') {
+                return "image/webp";
+            }
+        } catch (java.io.IOException e) {
+            log.warn("Failed to read upload header for MIME detection", e);
+        }
+        return "application/octet-stream";
     }
 
     private UserInternalDTO toInternalDto(User user) {

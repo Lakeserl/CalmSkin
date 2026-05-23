@@ -9,8 +9,10 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import java.time.LocalDateTime;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -84,7 +86,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleOther(Exception ex, HttpServletRequest request) {
-        return buildErrorResponse(false, "INTERNAL_SERVER_ERROR", ex.getMessage(), request.getRequestURI(), HttpStatus.INTERNAL_SERVER_ERROR);
+        log.error("Unhandled exception at {}: {}", request.getRequestURI(), ex.getMessage(), ex);
+        return buildErrorResponse(false, "INTERNAL_SERVER_ERROR", "An internal error occurred. Please try again.", request.getRequestURI(), HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     private ResponseEntity<ErrorResponse> buildErrorResponse(boolean success, String code, String message, String path, HttpStatus status) {

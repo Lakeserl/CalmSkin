@@ -14,12 +14,13 @@ public class RedisTokenService {
 
     private final RedisTemplate<String, Object> redis;
 
-    private String otpKey(String userId, String type)   { return "otp:" + userId + ":" + type; }
-    private String refreshHashKey(String tokenHash)     { return "refresh_token:hash:" + tokenHash; }
-    private String refreshUserKey(String userId)        { return "refresh_token:user:" + userId; }
-    private String loginAttemptKey(String email)        { return "login_attempts:" + email; }
-    private String blacklistKey(String jti)             { return "blacklist_token:" + jti; }
-    private String rateLimitKey(String ip, String ep)   { return "rate_limit:" + ip + ":" + ep; }
+    private String otpKey(String userId, String type)        { return "otp:" + userId + ":" + type; }
+    private String otpAttemptKey(String userId, String type) { return "otp_attempts:" + userId + ":" + type; }
+    private String refreshHashKey(String tokenHash)          { return "refresh_token:hash:" + tokenHash; }
+    private String refreshUserKey(String userId)             { return "refresh_token:user:" + userId; }
+    private String loginAttemptKey(String email)             { return "login_attempts:" + email; }
+    private String blacklistKey(String jti)                  { return "blacklist_token:" + jti; }
+    private String rateLimitKey(String ip, String ep)        { return "rate_limit:" + ip + ":" + ep; }
 
     public void saveOtp(String userId, String type, String hashedOtp, long ttlMinutes) {
         redis.opsForValue().set(otpKey(userId, type), hashedOtp, ttlMinutes, TimeUnit.MINUTES);
@@ -70,8 +71,9 @@ public class RedisTokenService {
 
     public int incrementLoginAttempt(String email) {
         String key = loginAttemptKey(email);
+        redis.opsForValue().setIfAbsent(key, "0", 15, TimeUnit.MINUTES);
         Long count = redis.opsForValue().increment(key);
-        if (count == 1) redis.expire(key, 15, TimeUnit.MINUTES);
+        if (count == null) return 1;
         return count.intValue();
     }
 
@@ -84,11 +86,29 @@ public class RedisTokenService {
         redis.delete(loginAttemptKey(email));
     }
 
+    public int incrementOtpAttempt(String userId, String type) {
+        String key = otpAttemptKey(userId, type);
+        redis.opsForValue().setIfAbsent(key, "0", 15, TimeUnit.MINUTES);
+        Long count = redis.opsForValue().increment(key);
+        if (count == null) return 1;
+        return count.intValue();
+    }
+
+    public boolean isOtpLockedOut(String userId, String type) {
+        Object val = redis.opsForValue().get(otpAttemptKey(userId, type));
+        return val != null && Integer.parseInt(val.toString()) >= 5;
+    }
+
+    public void resetOtpAttempt(String userId, String type) {
+        redis.delete(otpAttemptKey(userId, type));
+    }
+
     public boolean checkRateLimit(String ip, String endpoint, int maxRequests, long windowSeconds) {
         String key = rateLimitKey(ip, endpoint);
+        redis.opsForValue().setIfAbsent(key, "0", windowSeconds, TimeUnit.SECONDS);
         Long count = redis.opsForValue().increment(key);
-        if (count == 1) redis.expire(key, windowSeconds, TimeUnit.SECONDS);
-        return count <= maxRequests;
+        if (count == null) return false;
+        return count.intValue() <= maxRequests;
     }
     
 }

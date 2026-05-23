@@ -80,7 +80,6 @@ public class AdminService {
     public void forceResetPassword(UUID id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
-        // Gửi email reset password
         kafkaProducer.sendPasswordReset(id.toString(), user.getEmail(), "ADMIN_RESET");
     }
 
@@ -89,16 +88,11 @@ public class AdminService {
     }
 
     public Map<String, Long> getStatsSummary() {
-        long total = userRepository.count();
-        List<User> all = userRepository.findAll();
-        long active = all.stream().filter(u -> u.getStatus() == Status.ACTIVE).count();
-        long banned = all.stream().filter(u -> u.getStatus() == Status.BANNED).count();
-        long unverified = all.stream().filter(u -> u.getStatus() == Status.UNVERIFIED).count();
         return Map.of(
-                "total", total,
-                "active", active,
-                "banned", banned,
-                "unverified", unverified
+                "total",      userRepository.count(),
+                "active",     userRepository.countByStatus(Status.ACTIVE),
+                "banned",     userRepository.countByStatus(Status.BANNED),
+                "unverified", userRepository.countByStatus(Status.UNVERIFIED)
         );
     }
 

@@ -15,8 +15,8 @@ public class KafkaProducer {
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
-    public void sendUserRegistered(String userId, String email, String otp) {
-        send("user.registered", Map.of("userId", userId, "email", email, "otp", otp));
+    public void sendUserRegistered(String userId, String email) {
+        send("user.registered", Map.of("userId", userId, "email", email));
     }
 
     public void sendUserEmailVerified(String userId, String email) {
@@ -36,7 +36,13 @@ public class KafkaProducer {
     }
 
     private void send(String topic, Object payload) {
-        kafkaTemplate.send(topic, payload);
-        log.debug("Kafka event sent: topic={}", topic);
+        kafkaTemplate.send(topic, payload).whenComplete((result, ex) -> {
+            if (ex != null) {
+                log.error("Failed to publish Kafka event: topic={}, error={}", topic, ex.getMessage(), ex);
+            } else {
+                log.debug("Kafka event sent: topic={}, partition={}, offset={}",
+                        topic, result.getRecordMetadata().partition(), result.getRecordMetadata().offset());
+            }
+        });
     }
 }
