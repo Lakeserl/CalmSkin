@@ -23,6 +23,8 @@ jobs:
           - order-service
           - payment-service
           - notification-service
+          - promotion-service
+          - review-service
     steps:
       - name: Checkout
         uses: actions/checkout@v4

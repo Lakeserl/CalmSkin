@@ -7,7 +7,7 @@ generated-test-sources/
 surefire-reports/
 *.class
 .DS_Store
-mvnw
-mvnw.cmd
-CLAUDE.md
+# mvnw
+# mvnw.cmd
 user-service/output.log
+.claude
