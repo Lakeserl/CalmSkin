@@ -88,17 +88,17 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ErrorResponse> handleNotReadable(HttpMessageNotReadableException ex, HttpServletRequest request) {
-        return buildErrorResponse("INVALID_REQUEST_BODY", "Request body không hợp lệ", request, HttpStatus.BAD_REQUEST);
+        return buildErrorResponse("INVALID_REQUEST_BODY", "Invalid request body", request, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public ResponseEntity<ErrorResponse> handleMissingParam(MissingServletRequestParameterException ex, HttpServletRequest request) {
-        return buildErrorResponse("MISSING_PARAMETER", "Thiếu tham số: " + ex.getParameterName(), request, HttpStatus.BAD_REQUEST);
+        return buildErrorResponse("MISSING_PARAMETER", "Missing parameter: " + ex.getParameterName(), request, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException ex, HttpServletRequest request) {
-        return buildErrorResponse("INVALID_PARAMETER_TYPE", "Tham số '" + ex.getName() + "' không đúng kiểu dữ liệu", request, HttpStatus.BAD_REQUEST);
+        return buildErrorResponse("INVALID_PARAMETER_TYPE", "Invalid type for parameter '" + ex.getName() + "'", request, HttpStatus.BAD_REQUEST);
     }
 
     // ============ 405 METHOD NOT ALLOWED ============
@@ -111,14 +111,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ImageUploadException.class)
     public ResponseEntity<ErrorResponse> handleImageUpload(ImageUploadException ex, HttpServletRequest request) {
         log.error("Image upload failed at {}: {}", request.getRequestURI(), ex.getMessage(), ex);
-        return buildErrorResponse("IMAGE_UPLOAD_ERROR", ex.getMessage(), request, HttpStatus.INTERNAL_SERVER_ERROR);
+        return buildErrorResponse("IMAGE_UPLOAD_ERROR", "Image upload failed. Please try again.", request, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     // ============ 500 FALLBACK ============
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleOther(Exception ex, HttpServletRequest request) {
         log.error("Unhandled exception at {}: {}", request.getRequestURI(), ex.getMessage(), ex);
-        return buildErrorResponse("INTERNAL_SERVER_ERROR", "Có lỗi xảy ra, vui lòng thử lại sau", request, HttpStatus.INTERNAL_SERVER_ERROR);
+        return buildErrorResponse("INTERNAL_SERVER_ERROR", "An internal error occurred. Please try again.", request, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     private ResponseEntity<ErrorResponse> buildErrorResponse(String code, String message, HttpServletRequest request, HttpStatus status) {

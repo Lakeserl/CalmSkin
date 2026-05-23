@@ -32,8 +32,7 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         id:
           new_generator_mappings: false
-        show_sql: true
-        format_sql: true
+        show_sql: false
         jdbc:
           batch_size: 25
           fetch_size: 50
@@ -66,7 +65,7 @@ cloudinary:
   api-secret: ${CLOUDINARY_API_SECRET:stub}
 
 app:
-  internal-secret: ${INTERNAL_SECRET:calmskin-internal-secret-key}
+  internal-secret: ${INTERNAL_SECRET}
   scheduling:
     view-count-flush: 3600000
 
@@ -82,7 +81,7 @@ eureka:
 management:
   tracing:
     sampling:
-      probability: 1.0
+      probability: ${TRACING_SAMPLE_RATE:0.1}
   zipkin:
     tracing:
       endpoint: http://${ZIPKIN_HOST:localhost}:9411/api/v2/spans

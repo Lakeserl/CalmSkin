@@ -3,10 +3,13 @@ package com.lakeserl.product_service.service;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.lakeserl.product_service.entity.ProcessedKafkaEvent;
+import com.lakeserl.product_service.repository.ProcessedKafkaEventRepository;
 import com.lakeserl.product_service.repository.ProductRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -25,10 +28,20 @@ import lombok.extern.slf4j.Slf4j;
 public class ProductEventConsumer {
 
     private final ProductRepository productRepository;
+    private final ProcessedKafkaEventRepository processedKafkaEventRepository;
 
     @KafkaListener(topics = "order.completed", groupId = "product-service")
     @Transactional
-    public void onOrderCompleted(Map<String, Object> event) {
+    public void onOrderCompleted(ConsumerRecord<String, Map<String, Object>> record) {
+        String eventId = record.key() != null
+                ? record.topic() + ":" + record.key()
+                : record.topic() + ":" + record.partition() + ":" + record.offset();
+        if (processedKafkaEventRepository.existsById(eventId)) {
+            log.debug("Skipping duplicate order.completed event: {}", eventId);
+            return;
+        }
+
+        Map<String, Object> event = record.value();
         Object rawItems = event.get("items");
         if (!(rawItems instanceof List<?> items)) {
             log.warn("order.completed without items, skipping sold-count update: {}", event.get("orderId"));
@@ -52,6 +65,9 @@ public class ProductEventConsumer {
                 log.warn("order.completed referenced unknown product id={}", productIdValue);
             }
         }
+
+        processedKafkaEventRepository.save(
+                new ProcessedKafkaEvent(eventId, "order.completed", null));
         log.info("Applied sold-count update for order {}", event.get("orderId"));
     }
 }

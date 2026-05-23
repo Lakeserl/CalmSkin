@@ -2,12 +2,15 @@ package com.lakeserl.product_service.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lakeserl.product_service.dto.request.UpdateReviewSummaryRequest;
+import com.lakeserl.product_service.entity.ProcessedKafkaEvent;
 import com.lakeserl.product_service.entity.Product;
 import com.lakeserl.product_service.entity.ReviewSummary;
+import com.lakeserl.product_service.repository.ProcessedKafkaEventRepository;
 import com.lakeserl.product_service.repository.ProductRepository;
 import com.lakeserl.product_service.repository.ReviewSummaryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +24,7 @@ public class ReviewSummaryServiceImpl implements ReviewSummaryService {
 
     private final ReviewSummaryRepository reviewSummaryRepository;
     private final ProductRepository productRepository;
+    private final ProcessedKafkaEventRepository processedKafkaEventRepository;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -54,15 +58,18 @@ public class ReviewSummaryServiceImpl implements ReviewSummaryService {
         reviewSummaryRepository.save(summary);
     }
 
-    /**
-     * Master Topic List §8: review-service publishes review.created / review.deleted,
-     * each carrying the recomputed review summary snapshot for the affected product.
-     */
-    @KafkaListener(topics = {"review.created", "review.deleted"}, groupId = "product-service")
-    public void consumeReviewSummaryUpdate(Map<String, Object> event) {
+    @KafkaListener(topics = "review.summary.updated", groupId = "product-service")
+    @Transactional
+    public void consumeReviewSummaryUpdate(ConsumerRecord<String, Map<String, Object>> record) {
+        String eventId = record.topic() + ":" + (record.key() != null ? record.key() : record.offset());
+        if (processedKafkaEventRepository.existsById(eventId)) {
+            log.debug("Skipping duplicate review.summary.updated event: {}", eventId);
+            return;
+        }
         try {
-            UpdateReviewSummaryRequest request = objectMapper.convertValue(event, UpdateReviewSummaryRequest.class);
+            UpdateReviewSummaryRequest request = objectMapper.convertValue(record.value(), UpdateReviewSummaryRequest.class);
             handleReviewSummaryUpdate(request);
+            processedKafkaEventRepository.save(new ProcessedKafkaEvent(eventId, "review.summary.updated", null));
         } catch (Exception e) {
             log.error("Error processing review summary update from Kafka", e);
         }

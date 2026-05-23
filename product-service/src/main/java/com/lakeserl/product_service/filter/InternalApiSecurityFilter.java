@@ -20,7 +20,7 @@ import java.io.IOException;
 @Order(Ordered.HIGHEST_PRECEDENCE + 1)
 public class InternalApiSecurityFilter extends OncePerRequestFilter {
 
-    @Value("${app.internal-secret:calmskin-internal-secret-key}")
+    @Value("${app.internal-secret}")
     private String expectedSecret;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
