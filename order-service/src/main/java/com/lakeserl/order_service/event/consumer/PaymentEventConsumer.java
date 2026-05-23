@@ -1,7 +1,6 @@
 package com.lakeserl.order_service.event.consumer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.lakeserl.order_service.entity.OrderPaymentInfo;
 import com.lakeserl.order_service.entity.ProcessedKafkaEvent;
 import com.lakeserl.order_service.enums.OrderStatus;
 import com.lakeserl.order_service.enums.PaymentStatus;
@@ -21,7 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Slf4j
 @Component
@@ -37,8 +35,10 @@ public class PaymentEventConsumer {
     @KafkaListener(topics = "payment.completed", groupId = "order-service")
     @Transactional
     public void handlePaymentCompleted(ConsumerRecord<String, String> record, Acknowledgment ack) {
-        String eventId = record.topic() + ":" + (record.key() != null ? record.key() : UUID.randomUUID().toString());
-        log.info("Received payment.completed: key={}, value={}", record.key(), record.value());
+        String eventId = record.key() != null
+                ? record.topic() + ":" + record.key()
+                : record.topic() + ":" + record.partition() + ":" + record.offset();
+        log.info("Received payment.completed: key={}, eventId={}", record.key(), eventId);
 
         if (processedKafkaEventRepository.existsById(eventId)) {
             ack.acknowledge();
@@ -51,11 +51,11 @@ public class PaymentEventConsumer {
 
             orderRepository.findById(orderId).ifPresent(order -> {
                 if (order.getStatus() == OrderStatus.CONFIRMED || order.getStatus() == OrderStatus.PENDING) {
-                    // Update order status: CONFIRMED -> PAID, then PAID -> PREPARING
-                    orderStatusService.transitionTo(order, OrderStatus.PAID, "system", "Payment completed via " + event.paymentMethod());
-                    orderStatusService.transitionTo(order, OrderStatus.PREPARING, "system", "Order is being prepared");
+                    // Single atomic transition: skip PAID as intermediate durable state to avoid
+                    // the order getting stuck in PAID if the second transition fails.
+                    orderStatusService.transitionTo(order, OrderStatus.PREPARING, "system",
+                            "Payment completed via " + event.paymentMethod() + ". Order is being prepared.");
 
-                    // Update payment info
                     paymentInfoRepository.findByOrderId(orderId).ifPresent(payment -> {
                         payment.setPaymentStatus(PaymentStatus.COMPLETED);
                         payment.setTransactionId(event.transactionId());
@@ -68,16 +68,18 @@ public class PaymentEventConsumer {
             processedKafkaEventRepository.save(new ProcessedKafkaEvent(eventId, "payment.completed", null));
             ack.acknowledge();
         } catch (IOException | NumberFormatException ex) {
-            log.error("Error processing payment.completed event", ex);
-            throw new IllegalArgumentException("Failed to process event", ex);
+            log.error("Error processing payment.completed event: eventId={}", eventId, ex);
+            // Do not ack — let Kafka retry this message
         }
     }
 
     @KafkaListener(topics = "payment.failed", groupId = "order-service")
     @Transactional
     public void handlePaymentFailed(ConsumerRecord<String, String> record, Acknowledgment ack) {
-        String eventId = record.topic() + ":" + (record.key() != null ? record.key() : UUID.randomUUID().toString());
-        log.info("Received payment.failed: key={}, value={}", record.key(), record.value());
+        String eventId = record.key() != null
+                ? record.topic() + ":" + record.key()
+                : record.topic() + ":" + record.partition() + ":" + record.offset();
+        log.info("Received payment.failed: key={}, eventId={}", record.key(), eventId);
 
         if (processedKafkaEventRepository.existsById(eventId)) {
             ack.acknowledge();
@@ -104,8 +106,8 @@ public class PaymentEventConsumer {
             processedKafkaEventRepository.save(new ProcessedKafkaEvent(eventId, "payment.failed", null));
             ack.acknowledge();
         } catch (IOException | NumberFormatException ex) {
-            log.error("Error processing payment.failed event", ex);
-            throw new IllegalArgumentException("Failed to process event", ex);
+            log.error("Error processing payment.failed event: eventId={}", eventId, ex);
+            // Do not ack — let Kafka retry this message
         }
     }
 }

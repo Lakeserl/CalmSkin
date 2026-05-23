@@ -514,30 +514,41 @@ public class OrderServiceImpl implements OrderService {
         
         StringBuilder csv = new StringBuilder();
         csv.append("Order Number,User ID,Recipient Name,Phone,Address,Subtotal,Discount,Shipping Fee,Points Used,Points Amount,Total Amount,Voucher Code,Status,Payment Method,Created At\n");
-        
+
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         for (Order order : orders) {
-            String address = String.format("\"%s, %s, %s, %s, %s\"", 
-                    order.getShippingStreet(), order.getShippingWard(), 
-                    order.getShippingDistrict(), order.getShippingProvince(), "VN");
+            String address = String.format("%s, %s, %s, %s, VN",
+                    order.getShippingStreet(), order.getShippingWard(),
+                    order.getShippingDistrict(), order.getShippingProvince());
 
-            csv.append(order.getOrderNumber()).append(",")
-                    .append(order.getUserId()).append(",")
-                    .append(order.getShippingName()).append(",")
-                    .append(order.getShippingPhone()).append(",")
-                    .append(address).append(",")
+            csv.append(csvField(order.getOrderNumber())).append(",")
+                    .append(csvField(order.getUserId().toString())).append(",")
+                    .append(csvField(order.getShippingName())).append(",")
+                    .append(csvField(order.getShippingPhone())).append(",")
+                    .append(csvField(address)).append(",")
                     .append(order.getSubtotal()).append(",")
                     .append(order.getDiscountAmount()).append(",")
                     .append(order.getShippingFee()).append(",")
                     .append(order.getPointsUsed()).append(",")
                     .append(order.getPointsAmount()).append(",")
                     .append(order.getTotalAmount()).append(",")
-                    .append(order.getVoucherCode() == null ? "" : order.getVoucherCode()).append(",")
+                    .append(csvField(order.getVoucherCode() == null ? "" : order.getVoucherCode())).append(",")
                     .append(order.getStatus().name()).append(",")
                     .append(order.getPaymentMethod().name()).append(",")
                     .append(order.getCreatedAt().format(formatter)).append("\n");
         }
         return csv.toString();
+    }
+
+    // RFC 4180: quote the field and escape any internal double-quotes.
+    // Also prefix formula-trigger characters (=, +, -, @) to prevent CSV injection in spreadsheets.
+    private String csvField(String value) {
+        if (value == null) return "\"\"";
+        String safe = value;
+        if (!safe.isEmpty() && "=+-@".indexOf(safe.charAt(0)) >= 0) {
+            safe = "'" + safe;
+        }
+        return "\"" + safe.replace("\"", "\"\"") + "\"";
     }
 
     // Helper mappings
