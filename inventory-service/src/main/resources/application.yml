@@ -2,7 +2,7 @@ server:
   port: 8084
 
 internal:
-  secret: ${INTERNAL_SECRET:default-secret-change-in-production}
+  secret: ${INTERNAL_SECRET}
 
 spring:
   application:
