@@ -1,6 +1,8 @@
 package com.lakeserl.order_service.client;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.lakeserl.order_service.dto.response.ApiResponse;
 import com.lakeserl.order_service.exception.ServiceUnavailableException;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.AllArgsConstructor;
@@ -27,12 +29,13 @@ public class ProductServiceClient {
     @CircuitBreaker(name = "product-service", fallbackMethod = "fallbackValidateProducts")
     public List<ProductValidationItem> validateProducts(List<ProductValidationRequestItem> items) {
         log.info("Validating products with size={} against product-service", items.size());
-        return productServiceClient.post()
+        ApiResponse<List<ProductValidationItem>> response = productServiceClient.post()
                 .uri("/internal/products/validate")
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(items)
                 .retrieve()
-                .body(new ParameterizedTypeReference<List<ProductValidationItem>>() {});
+                .body(new ParameterizedTypeReference<ApiResponse<List<ProductValidationItem>>>() {});
+        return response != null ? response.getData() : List.of();
     }
 
     public List<ProductValidationItem> fallbackValidateProducts(List<ProductValidationRequestItem> items, Throwable t) {
@@ -61,6 +64,8 @@ public class ProductServiceClient {
         private String productImageUrl;
         private String brandName;
         private BigDecimal unitPrice;
+        @JsonProperty("valid")
         private boolean available;
     }
 }
+

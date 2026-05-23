@@ -1,6 +1,8 @@
 package com.lakeserl.order_service.client;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.lakeserl.order_service.dto.response.ApiResponse;
 import com.lakeserl.order_service.exception.ServiceUnavailableException;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.Data;
@@ -22,19 +24,21 @@ public class UserServiceClient {
     @CircuitBreaker(name = "user-service", fallbackMethod = "fallbackGetAddress")
     public AddressResponse getAddress(UUID userId, UUID addressId) {
         log.info("Fetching addressId={} for userId={} from user-service", addressId, userId);
-        return userServiceClient.get()
+        ApiResponse<AddressResponse> response = userServiceClient.get()
                 .uri("/internal/users/{userId}/addresses/{addressId}", userId, addressId)
                 .retrieve()
-                .body(AddressResponse.class);
+                .body(new ParameterizedTypeReference<ApiResponse<AddressResponse>>() {});
+        return response != null ? response.getData() : null;
     }
 
     @CircuitBreaker(name = "user-service", fallbackMethod = "fallbackGetPoints")
     public PointsResponse getPoints(UUID userId) {
         log.info("Fetching points for userId={} from user-service", userId);
-        return userServiceClient.get()
+        ApiResponse<PointsResponse> response = userServiceClient.get()
                 .uri("/internal/users/{userId}/points", userId)
                 .retrieve()
-                .body(PointsResponse.class);
+                .body(new ParameterizedTypeReference<ApiResponse<PointsResponse>>() {});
+        return response != null ? response.getData() : null;
     }
 
     public AddressResponse fallbackGetAddress(UUID userId, UUID addressId, Throwable t) {
@@ -61,6 +65,8 @@ public class UserServiceClient {
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class PointsResponse {
+        @JsonProperty("totalPoints")
         private Integer points;
     }
 }
+

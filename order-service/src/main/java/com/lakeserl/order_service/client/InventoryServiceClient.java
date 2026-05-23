@@ -1,6 +1,7 @@
 package com.lakeserl.order_service.client;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.lakeserl.order_service.dto.response.ApiResponse;
 import com.lakeserl.order_service.exception.ServiceUnavailableException;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.AllArgsConstructor;
@@ -26,12 +27,14 @@ public class InventoryServiceClient {
     @CircuitBreaker(name = "inventory-service", fallbackMethod = "fallbackCheckStockBatch")
     public List<StockCheckItem> checkStockBatch(List<StockCheckRequestItem> items) {
         log.info("Performing synchronous stock check-batch for size={} against inventory-service", items.size());
-        return inventoryServiceClient.post()
+        CheckStockBatchRequest request = CheckStockBatchRequest.builder().items(items).build();
+        ApiResponse<StockCheckBatchResponse> response = inventoryServiceClient.post()
                 .uri("/internal/inventory/check-batch")
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(items)
+                .body(request)
                 .retrieve()
-                .body(new ParameterizedTypeReference<List<StockCheckItem>>() {});
+                .body(new ParameterizedTypeReference<ApiResponse<StockCheckBatchResponse>>() {});
+        return (response != null && response.getData() != null) ? response.getData().getItems() : List.of();
     }
 
     public List<StockCheckItem> fallbackCheckStockBatch(List<StockCheckRequestItem> items, Throwable t) {
@@ -50,6 +53,20 @@ public class InventoryServiceClient {
     }
 
     @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class CheckStockBatchRequest {
+        private List<StockCheckRequestItem> items;
+    }
+
+    @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class StockCheckBatchResponse {
+        private List<StockCheckItem> items;
+    }
+
+    @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class StockCheckItem {
         private Long productId;
@@ -58,3 +75,4 @@ public class InventoryServiceClient {
         private Integer quantityAvailable;
     }
 }
+

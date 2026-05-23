@@ -58,6 +58,9 @@ public class OrderServiceImpl implements OrderService {
     @Value("${app.order.default-shipping-fee:30000}")
     private double defaultShippingFee;
 
+    @Value("${app.order.points-earn-rate:1000}")
+    private int pointsEarnRate;
+
     @Override
     @Transactional
     public OrderDTO createOrder(UUID userId, CreateOrderRequest request) {
@@ -238,6 +241,7 @@ public class OrderServiceImpl implements OrderService {
             eventPayload.put("userId", userId);
             eventPayload.put("totalAmount", totalAmount);
             eventPayload.put("paymentMethod", paymentMethod.name());
+            eventPayload.put("pointsUsed", pointsUsed);
             eventPayload.put("items", orderItems.stream()
                     .map(item -> Map.of(
                             "productId", item.getProductId(),
@@ -341,6 +345,7 @@ public class OrderServiceImpl implements OrderService {
                     "orderId", order.getId().toString(),
                     "orderNumber", order.getOrderNumber(),
                     "userId", userId,
+                    "pointsUsed", order.getPointsUsed(),
                     "reason", reason
             ));
 
@@ -374,6 +379,7 @@ public class OrderServiceImpl implements OrderService {
                     "orderId", order.getId().toString(),
                     "orderNumber", order.getOrderNumber(),
                     "userId", order.getUserId(),
+                    "pointsUsed", order.getPointsUsed(),
                     "reason", reason
             ));
 
@@ -407,8 +413,10 @@ public class OrderServiceImpl implements OrderService {
                         "orderId", order.getId().toString(),
                         "orderNumber", order.getOrderNumber(),
                         "userId", order.getUserId(),
+                        "pointsEarned", order.getTotalAmount().divide(BigDecimal.valueOf(pointsEarnRate)).intValue(),
                         "items", order.getItems().stream()
                                 .map(item -> Map.of(
+                                        "orderItemId", item.getId(),
                                         "productId", item.getProductId(),
                                         "variantId", item.getVariantId() == null ? "" : item.getVariantId().toString(),
                                         "quantity", item.getQuantity()
