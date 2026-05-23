@@ -8,6 +8,7 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lakeserl.product_service.entity.ProcessedKafkaEvent;
 import com.lakeserl.product_service.repository.ProcessedKafkaEventRepository;
 import com.lakeserl.product_service.repository.ProductRepository;
@@ -29,10 +30,11 @@ public class ProductEventConsumer {
 
     private final ProductRepository productRepository;
     private final ProcessedKafkaEventRepository processedKafkaEventRepository;
+    private final ObjectMapper objectMapper;
 
     @KafkaListener(topics = "order.completed", groupId = "product-service")
     @Transactional
-    public void onOrderCompleted(ConsumerRecord<String, Map<String, Object>> record) {
+    public void onOrderCompleted(ConsumerRecord<String, String> record) {
         String eventId = record.key() != null
                 ? record.topic() + ":" + record.key()
                 : record.topic() + ":" + record.partition() + ":" + record.offset();
@@ -41,7 +43,14 @@ public class ProductEventConsumer {
             return;
         }
 
-        Map<String, Object> event = record.value();
+        Map<String, Object> event;
+        try {
+            event = objectMapper.readValue(record.value(), Map.class);
+        } catch (Exception e) {
+            log.error("Failed to parse order.completed event payload", e);
+            return;
+        }
+
         Object rawItems = event.get("items");
         if (!(rawItems instanceof List<?> items)) {
             log.warn("order.completed without items, skipping sold-count update: {}", event.get("orderId"));

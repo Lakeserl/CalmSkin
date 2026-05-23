@@ -60,14 +60,14 @@ public class ReviewSummaryServiceImpl implements ReviewSummaryService {
 
     @KafkaListener(topics = "review.summary.updated", groupId = "product-service")
     @Transactional
-    public void consumeReviewSummaryUpdate(ConsumerRecord<String, Map<String, Object>> record) {
+    public void consumeReviewSummaryUpdate(ConsumerRecord<String, String> record) {
         String eventId = record.topic() + ":" + (record.key() != null ? record.key() : record.offset());
         if (processedKafkaEventRepository.existsById(eventId)) {
             log.debug("Skipping duplicate review.summary.updated event: {}", eventId);
             return;
         }
         try {
-            UpdateReviewSummaryRequest request = objectMapper.convertValue(record.value(), UpdateReviewSummaryRequest.class);
+            UpdateReviewSummaryRequest request = objectMapper.readValue(record.value(), UpdateReviewSummaryRequest.class);
             handleReviewSummaryUpdate(request);
             processedKafkaEventRepository.save(new ProcessedKafkaEvent(eventId, "review.summary.updated", null));
         } catch (Exception e) {

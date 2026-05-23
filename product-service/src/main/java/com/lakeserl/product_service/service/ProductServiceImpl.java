@@ -8,6 +8,8 @@ import com.lakeserl.product_service.dto.response.ProductInternalDTO;
 import com.lakeserl.product_service.dto.response.ProductSummaryDTO;
 import com.lakeserl.product_service.dto.response.ProductValidationResult;
 import com.lakeserl.product_service.entity.Product;
+import com.lakeserl.product_service.entity.ProductImage;
+import com.lakeserl.product_service.entity.ProductVariant;
 import com.lakeserl.product_service.enums.ProductStatus;
 import com.lakeserl.product_service.exception.ProductNotActiveException;
 import com.lakeserl.product_service.exception.ProductNotFoundException;
@@ -25,6 +27,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -156,7 +159,8 @@ public class ProductServiceImpl implements ProductService {
         return requests.stream()
                 .map(req -> {
                     ProductValidationResult.ProductValidationResultBuilder builder = ProductValidationResult.builder()
-                            .productId(req.getProductId());
+                            .productId(req.getProductId())
+                            .variantId(req.getVariantId());
 
                     if (req.getProductId() == null) {
                         return builder.valid(false).reason("MISSING_PRODUCT_ID").build();
@@ -169,6 +173,43 @@ public class ProductServiceImpl implements ProductService {
 
                     if (product.getStatus() != ProductStatus.ACTIVE) {
                         return builder.valid(false).reason("PRODUCT_NOT_ACTIVE").build();
+                    }
+
+                    builder.productName(product.getName());
+                    builder.brandName(product.getBrand() != null ? product.getBrand().getName() : null);
+
+                    String imageUrl = product.getImages() != null ? product.getImages().stream()
+                            .filter(ProductImage::getIsPrimary)
+                            .map(ProductImage::getUrl)
+                            .findFirst()
+                            .orElse(product.getImages().isEmpty() ? null : product.getImages().get(0).getUrl()) : null;
+                    builder.productImageUrl(imageUrl);
+
+                    if (req.getVariantId() != null) {
+                        ProductVariant variant = product.getVariants().stream()
+                                .filter(v -> v.getId().equals(req.getVariantId()))
+                                .findFirst()
+                                .orElse(null);
+
+                        if (variant == null) {
+                            return builder.valid(false).reason("VARIANT_NOT_FOUND").build();
+                        }
+
+                        if (variant.getIsActive() == null || !variant.getIsActive()) {
+                            return builder.valid(false).reason("VARIANT_NOT_ACTIVE").build();
+                        }
+
+                        builder.variantName(variant.getName());
+                        builder.productSku(variant.getSku());
+
+                        BigDecimal unitPrice = variant.getSalePrice() != null ? variant.getSalePrice() : variant.getPrice();
+                        builder.unitPrice(unitPrice);
+                    } else {
+                        builder.variantName(null);
+                        builder.productSku(product.getSku());
+
+                        BigDecimal unitPrice = product.getSalePrice() != null ? product.getSalePrice() : product.getBasePrice();
+                        builder.unitPrice(unitPrice);
                     }
 
                     return builder.valid(true).reason("OK").build();
