@@ -52,4 +52,65 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
                                       @Param("usageStep") String usageStep, 
                                       @Param("excludeId") Long excludeId, 
                                       @Param("limit") int limit);
+
+    /**
+     * Recommendation query (v1, rule-based):
+     * - Only ACTIVE products
+     * - Exclude products already purchased by the user
+     * - Boost products whose brand the user has purchased before (brand affinity)
+     * - Filter by skinType match OR skinConcern match in JSON columns
+     *
+     * skinType: stored as JSON array e.g. ["OILY","COMBINATION"] — use native JSON containment.
+     * skinConcern list: each concern is matched individually with LIKE against the JSON array string.
+     *
+     * This is a best-effort native query. For production at scale, migrate to Elasticsearch.
+     */
+    @Query(value = """
+            SELECT p.* FROM products p
+            WHERE p.status = 'ACTIVE'
+              AND (:excludeIds IS NULL OR p.product_id NOT IN (:excludeIds))
+              AND (
+                    (:skinType IS NULL OR p.suitable_skin_types::text LIKE CONCAT('%', :skinType, '%'))
+                 OR (:concern1 IS NULL OR p.skin_concerns::text LIKE CONCAT('%', :concern1, '%'))
+                 OR (:concern2 IS NULL OR p.skin_concerns::text LIKE CONCAT('%', :concern2, '%'))
+                 OR (:concern3 IS NULL OR p.skin_concerns::text LIKE CONCAT('%', :concern3, '%'))
+              )
+            ORDER BY
+              CASE WHEN :boostBrandId IS NOT NULL AND p.brand_id = :boostBrandId THEN 0 ELSE 1 END,
+              (SELECT COALESCE(rs.average_rating, 0) FROM review_summaries rs WHERE rs.product_id = p.product_id) DESC,
+              p.sold_count DESC
+            LIMIT :limitCount
+            """, nativeQuery = true)
+    List<Product> findRecommendations(
+            @Param("skinType") String skinType,
+            @Param("concern1") String concern1,
+            @Param("concern2") String concern2,
+            @Param("concern3") String concern3,
+            @Param("excludeIds") List<Long> excludeIds,
+            @Param("boostBrandId") Long boostBrandId,
+            @Param("limitCount") int limitCount);
+
+    @Query(value = """
+            SELECT p.* FROM products p
+            WHERE p.status = 'ACTIVE'
+              AND p.usage_step = :usageStep
+              AND (
+                    (:skinType IS NULL OR p.suitable_skin_types::text LIKE CONCAT('%', :skinType, '%'))
+                 OR (:concern1 IS NULL OR p.skin_concerns::text LIKE CONCAT('%', :concern1, '%'))
+                 OR (:concern2 IS NULL OR p.skin_concerns::text LIKE CONCAT('%', :concern2, '%'))
+                 OR (:concern3 IS NULL OR p.skin_concerns::text LIKE CONCAT('%', :concern3, '%'))
+              )
+            ORDER BY
+              (SELECT COALESCE(rs.average_rating, 0) FROM review_summaries rs WHERE rs.product_id = p.product_id) DESC,
+              p.sold_count DESC
+            LIMIT :limitCount
+            """, nativeQuery = true)
+    List<Product> findRoutineProducts(
+            @Param("usageStep") String usageStep,
+            @Param("skinType") String skinType,
+            @Param("concern1") String concern1,
+            @Param("concern2") String concern2,
+            @Param("concern3") String concern3,
+            @Param("limitCount") int limitCount);
 }
+

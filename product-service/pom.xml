@@ -30,6 +30,7 @@
 		<java.version>17</java.version>
 		<spring-cloud.version>2024.0.1</spring-cloud.version>
 		<mapstruct.version>1.5.5.Final</mapstruct.version>
+		<aws.sdk.version>2.25.40</aws.sdk.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -136,6 +137,18 @@
 			<groupId>com.cloudinary</groupId>
 			<artifactId>cloudinary-http45</artifactId>
 			<version>1.36.0</version>
+		</dependency>
+
+		<!-- AWS S3 (product image pre-signed URLs) -->
+		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>s3</artifactId>
+			<version>${aws.sdk.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>url-connection-client</artifactId>
+			<version>${aws.sdk.version}</version>
 		</dependency>
 	</dependencies>
 	<dependencyManagement>

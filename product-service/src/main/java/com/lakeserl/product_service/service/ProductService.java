@@ -26,6 +26,8 @@ public interface ProductService {
     
     List<ProductSummaryDTO> getSimilarProducts(String slug, int limit);
 
+    List<ProductDTO> compareProducts(List<Long> ids);
+
     List<ProductInternalDTO> getProductsByIds(List<Long> ids);
 
     List<ProductValidationResult> validateProducts(List<ProductValidationRequest> requests);

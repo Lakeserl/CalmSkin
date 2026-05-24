@@ -68,6 +68,13 @@ app:
   internal-secret: ${INTERNAL_SECRET}
   scheduling:
     view-count-flush: 3600000
+  s3:
+    region: ${S3_REGION:ap-southeast-1}
+    access-key: ${S3_ACCESS_KEY:}
+    secret-key: ${S3_SECRET_KEY:}
+    endpoint: ${S3_ENDPOINT:}
+    bucket: ${S3_BUCKET_PRODUCTS:calmskin-product-media}
+    cdn-base-url: ${S3_CDN_BASE_URL:}
 
 eureka:
   client:

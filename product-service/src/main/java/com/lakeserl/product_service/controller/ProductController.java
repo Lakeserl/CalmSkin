@@ -51,8 +51,14 @@ public class ProductController {
     @GetMapping("/{slug}/similar")
     @Operation(summary = "Get similar products")
     public ApiResponse<List<ProductSummaryDTO>> getSimilarProducts(
-            @PathVariable String slug, 
+            @PathVariable String slug,
             @RequestParam(defaultValue = "4") int limit) {
         return ApiResponse.ok(productService.getSimilarProducts(slug, limit));
+    }
+
+    @GetMapping("/compare")
+    @Operation(summary = "Compare 2-4 products side-by-side")
+    public ApiResponse<List<ProductDTO>> compareProducts(@RequestParam List<Long> ids) {
+        return ApiResponse.ok(productService.compareProducts(ids));
     }
 }

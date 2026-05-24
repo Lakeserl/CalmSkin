@@ -78,6 +78,11 @@ public class GlobalExceptionHandler {
         return buildErrorResponse("PRODUCT_NOT_ACTIVE", ex.getMessage(), request, HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(InvalidCompareCountException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidCompareCount(InvalidCompareCountException ex, HttpServletRequest request) {
+        return buildErrorResponse("INVALID_COMPARE_COUNT", ex.getMessage(), request, HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex, HttpServletRequest request) {
         List<String> errors = ex.getBindingResult().getFieldErrors().stream()

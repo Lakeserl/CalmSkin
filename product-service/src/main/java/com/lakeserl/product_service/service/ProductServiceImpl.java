@@ -11,6 +11,7 @@ import com.lakeserl.product_service.entity.Product;
 import com.lakeserl.product_service.entity.ProductImage;
 import com.lakeserl.product_service.entity.ProductVariant;
 import com.lakeserl.product_service.enums.ProductStatus;
+import com.lakeserl.product_service.exception.InvalidCompareCountException;
 import com.lakeserl.product_service.exception.ProductNotActiveException;
 import com.lakeserl.product_service.exception.ProductNotFoundException;
 import com.lakeserl.product_service.mapper.ProductMapper;
@@ -146,6 +147,31 @@ public class ProductServiceImpl implements ProductService {
     public List<ProductInternalDTO> getProductsByIds(List<Long> ids) {
         return productRepository.findAllById(ids).stream()
                 .map(this::toInternalDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ProductDTO> compareProducts(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            throw new InvalidCompareCountException("ids must contain between 2 and 4 product IDs");
+        }
+        List<Long> distinctIds = ids.stream().distinct().collect(Collectors.toList());
+        if (distinctIds.size() < 2 || distinctIds.size() > 4) {
+            throw new InvalidCompareCountException("ids must contain between 2 and 4 distinct product IDs (got " + distinctIds.size() + ")");
+        }
+
+        Map<Long, Product> byId = productRepository.findAllById(distinctIds).stream()
+                .collect(Collectors.toMap(Product::getId, p -> p));
+
+        List<Long> missing = distinctIds.stream().filter(id -> !byId.containsKey(id)).toList();
+        if (!missing.isEmpty()) {
+            throw new ProductNotFoundException("Products not found: " + missing);
+        }
+
+        return distinctIds.stream()
+                .map(byId::get)
+                .map(productMapper::toDto)
                 .collect(Collectors.toList());
     }
 
