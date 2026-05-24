@@ -58,9 +58,6 @@ public class OrderServiceImpl implements OrderService {
     @Value("${app.order.default-shipping-fee:30000}")
     private double defaultShippingFee;
 
-    @Value("${app.order.points-earn-rate:1000}")
-    private int pointsEarnRate;
-
     @Override
     @Transactional
     public OrderDTO createOrder(UUID userId, CreateOrderRequest request) {
@@ -398,7 +395,9 @@ public class OrderServiceImpl implements OrderService {
         OrderStatus nextStatus = OrderStatus.valueOf(status.toUpperCase());
         orderStatusService.transitionTo(order, nextStatus, adminUsername, note);
 
-        // Sync payment status if DELIVERED or SHIPPING
+        // Sync payment status if DELIVERED. The order.completed Kafka event is
+        // emitted from OrderStatusServiceImpl.transitionTo so every DELIVERED path
+        // (admin manual + shipping webhook) publishes exactly once.
         if (nextStatus == OrderStatus.DELIVERED) {
             paymentInfoRepository.findByOrderId(order.getId()).ifPresent(payment -> {
                 if (payment.getPaymentStatus() == PaymentStatus.PENDING) {
@@ -407,24 +406,6 @@ public class OrderServiceImpl implements OrderService {
                     paymentInfoRepository.save(payment);
                 }
             });
-
-            try {
-                publishOutboxEvent("Order", order.getId().toString(), "order.completed", Map.of(
-                        "orderId", order.getId().toString(),
-                        "orderNumber", order.getOrderNumber(),
-                        "userId", order.getUserId(),
-                        "pointsEarned", order.getTotalAmount().divide(BigDecimal.valueOf(pointsEarnRate)).intValue(),
-                        "items", order.getItems().stream()
-                                .map(item -> Map.of(
-                                        "orderItemId", item.getId(),
-                                        "productId", item.getProductId(),
-                                        "variantId", item.getVariantId() == null ? "" : item.getVariantId().toString(),
-                                        "quantity", item.getQuantity()
-                                )).toList()
-                ));
-            } catch (JsonProcessingException e) {
-                log.error("Serialization exception in order.completed event", e);
-            }
         }
     }
 
@@ -485,6 +466,12 @@ public class OrderServiceImpl implements OrderService {
             log.error("Failed to serialize outbox event payload", e);
             throw new IllegalStateException("Failed to return order due to event serialization failure");
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Long> getPurchasedProductIds(UUID userId, LocalDateTime since) {
+        return orderRepository.findDeliveredProductIdsByUserSince(userId, since);
     }
 
     @Override

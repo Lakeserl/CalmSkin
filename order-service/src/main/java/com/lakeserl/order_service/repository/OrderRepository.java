@@ -41,4 +41,14 @@ public interface OrderRepository extends JpaRepository<Order, Long>, JpaSpecific
                                    @Param("fromDate") LocalDateTime fromDate,
                                    @Param("toDate") LocalDateTime toDate,
                                    Pageable pageable);
+
+    /**
+     * Returns distinct productIds purchased by a user in DELIVERED orders within the last N days.
+     * Used by product-service Recommendations algorithm for exclusion + brand-affinity scoring.
+     */
+    @Query("SELECT DISTINCT i.productId FROM Order o JOIN o.items i " +
+           "WHERE o.userId = :userId AND o.status = 'DELIVERED' " +
+           "AND o.deliveredAt >= :since")
+    List<Long> findDeliveredProductIdsByUserSince(@Param("userId") UUID userId,
+                                                  @Param("since") LocalDateTime since);
 }

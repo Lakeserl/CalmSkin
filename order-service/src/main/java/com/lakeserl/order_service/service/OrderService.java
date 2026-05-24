@@ -36,4 +36,7 @@ public interface OrderService {
     OrderStatsDTO getOrderStatsAdmin();
 
     String exportOrdersCsv(OrderStatus status, UUID userId, String orderNumber, LocalDateTime fromDate, LocalDateTime toDate);
+
+    /** Returns distinct productIds purchased by userId in DELIVERED orders since the given date. */
+    java.util.List<Long> getPurchasedProductIds(UUID userId, LocalDateTime since);
 }
