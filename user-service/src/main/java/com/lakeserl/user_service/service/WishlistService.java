@@ -22,14 +22,14 @@ public class WishlistService {
     private final WishlistRepository wishlistRepository;
     private final UserRepository userRepository;
 
-    public List<UUID> getWishlist(UUID userId) {
+    public List<Long> getWishlist(UUID userId) {
         return wishlistRepository.findByUserId(userId).stream()
                 .map(Wishlist::getProductId)
                 .collect(Collectors.toList());
     }
 
     @Transactional
-    public void addToWishlist(UUID userId, UUID productId) {
+    public void addToWishlist(UUID userId, Long productId) {
         if (wishlistRepository.existsByUserIdAndProductId(userId, productId)) {
             return; // Already exists
         }
@@ -42,7 +42,7 @@ public class WishlistService {
     }
 
     @Transactional
-    public void removeFromWishlist(UUID userId, UUID productId) {
+    public void removeFromWishlist(UUID userId, Long productId) {
         wishlistRepository.findByUserIdAndProductId(userId, productId)
                 .ifPresent(wishlistRepository::delete);
     }

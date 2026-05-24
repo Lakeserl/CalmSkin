@@ -172,4 +172,12 @@ public class UserServiceImpl implements UserService {
                 .status(user.getStatus())
                 .build();
     }
+
+    @Override
+    @Transactional
+    public UserDTO updateAvatarUrl(UUID userId, String avatarUrl) {
+        User user = findById(userId);
+        user.setAvatarUrl(avatarUrl);
+        return userMapper.toDto(userRepository.save(user));
+    }
 }

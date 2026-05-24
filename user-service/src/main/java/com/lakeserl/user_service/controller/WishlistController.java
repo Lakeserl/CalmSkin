@@ -25,7 +25,7 @@ public class WishlistController {
 
     @GetMapping
     @Operation(summary = "Get wishlist")
-    public ResponseEntity<ApiResponse<List<UUID>>> getWishlist(
+    public ResponseEntity<ApiResponse<List<Long>>> getWishlist(
             @AuthenticationPrincipal CustomUserDetails principal) {
         return ResponseEntity.ok(ApiResponse.ok(wishlistService.getWishlist(principal.getId())));
     }
@@ -34,7 +34,7 @@ public class WishlistController {
     @Operation(summary = "Add product to wishlist")
     public ResponseEntity<ApiResponse<Void>> addToWishlist(
             @AuthenticationPrincipal CustomUserDetails principal,
-            @PathVariable UUID productId) {
+            @PathVariable Long productId) {
         wishlistService.addToWishlist(principal.getId(), productId);
         return ResponseEntity.ok(ApiResponse.ok("Added to wishlist"));
     }
@@ -43,7 +43,7 @@ public class WishlistController {
     @Operation(summary = "Remove product from wishlist")
     public ResponseEntity<ApiResponse<Void>> removeFromWishlist(
             @AuthenticationPrincipal CustomUserDetails principal,
-            @PathVariable UUID productId) {
+            @PathVariable Long productId) {
         wishlistService.removeFromWishlist(principal.getId(), productId);
         return ResponseEntity.ok(ApiResponse.ok("Removed from wishlist"));
     }

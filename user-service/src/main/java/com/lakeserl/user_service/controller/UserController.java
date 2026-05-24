@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import com.lakeserl.user_service.model.dto.UserDTO;
 import com.lakeserl.user_service.model.dto.request.ChangePasswordRequest;
 import com.lakeserl.user_service.model.dto.request.UpdateProfileRequest;
+import com.lakeserl.user_service.model.dto.request.UpdateAvatarRequest;
 import com.lakeserl.user_service.model.dto.response.ApiResponse;
 import com.lakeserl.user_service.security.userDetails.CustomUserDetails;
 import com.lakeserl.user_service.service.UserService;
@@ -74,6 +75,18 @@ public class UserController {
             @RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
         String url = userService.uploadAvatar(principal.getId(), file);
         return ResponseEntity.ok(ApiResponse.ok("Avatar uploaded", url));
+    }
+
+    @PatchMapping("/me/avatar")
+    @Operation(
+        summary = "Update avatar URL",
+        description = "Updates the user's avatar URL (used in the S3 presign-then-upload flow)."
+    )
+    public ResponseEntity<ApiResponse<UserDTO>> updateAvatarUrl(
+            @AuthenticationPrincipal CustomUserDetails principal,
+            @Valid @RequestBody UpdateAvatarRequest request) {
+        UserDTO updated = userService.updateAvatarUrl(principal.getId(), request.getAvatarUrl());
+        return ResponseEntity.ok(ApiResponse.ok("Avatar URL updated", updated));
     }
 
     @DeleteMapping("/me/avatar")

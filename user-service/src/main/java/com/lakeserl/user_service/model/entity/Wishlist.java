@@ -26,7 +26,7 @@ public class Wishlist {
     private User user;
 
     @Column(name = "product_id", nullable = false)
-    private UUID productId;
+    private Long productId;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

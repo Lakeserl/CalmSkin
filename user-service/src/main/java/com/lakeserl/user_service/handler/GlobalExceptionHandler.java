@@ -76,6 +76,11 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(false, "INVALID_PASSWORD", ex.getMessage(), request.getRequestURI(), HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler({InvalidFileException.class})
+    public ResponseEntity<ErrorResponse> handleInvalidFile(InvalidFileException ex, HttpServletRequest request) {
+        return buildErrorResponse(false, "INVALID_FILE", ex.getMessage(), request.getRequestURI(), HttpStatus.UNSUPPORTED_MEDIA_TYPE);
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex, HttpServletRequest request) {
         String message = ex.getBindingResult().getFieldErrors().stream()

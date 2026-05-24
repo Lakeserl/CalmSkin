@@ -18,10 +18,13 @@ import com.lakeserl.user_service.model.dto.UserDTO;
 import com.lakeserl.user_service.model.dto.internal.UserInternalDTO;
 import com.lakeserl.user_service.model.dto.response.AddressResponse;
 import com.lakeserl.user_service.model.dto.response.ApiResponse;
+import com.lakeserl.user_service.model.dto.response.SkinProfileResponse;
 import com.lakeserl.user_service.model.entity.UserPoint;
+import com.lakeserl.user_service.repository.WishlistRepository;
 import com.lakeserl.user_service.service.AddressService;
 import com.lakeserl.user_service.service.AuthService;
 import com.lakeserl.user_service.service.LoyaltyService;
+import com.lakeserl.user_service.service.SkinProfileService;
 import com.lakeserl.user_service.service.UserService;
 
 import io.swagger.v3.oas.annotations.Hidden;
@@ -37,6 +40,8 @@ public class InternalUserController {
     private final AddressService addressService;
     private final LoyaltyService loyaltyService;
     private final AuthService authService;
+    private final SkinProfileService skinProfileService;
+    private final WishlistRepository wishlistRepository;
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<UserDTO>> getUserById(@PathVariable UUID id) {
@@ -89,5 +94,19 @@ public class InternalUserController {
     public ResponseEntity<ApiResponse<Map<String, Boolean>>> validateToken(@RequestBody Map<String, String> body) {
         boolean valid = authService.validateToken(body.get("token"));
         return ResponseEntity.ok(ApiResponse.ok(Map.of("valid", valid)));
+    }
+    /** Returns the user's skin profile for rule-based recommendations. Returns 404 if not set. */
+    @GetMapping("/skin-profiles/{userId}")
+    public ResponseEntity<ApiResponse<SkinProfileResponse>> getSkinProfile(@PathVariable UUID userId) {
+        return ResponseEntity.ok(ApiResponse.ok(skinProfileService.getProfile(userId)));
+    }
+
+    /** Returns the user's wishlist product IDs. */
+    @GetMapping("/wishlists/{userId}/product-ids")
+    public ResponseEntity<ApiResponse<List<Long>>> getWishlistProductIds(@PathVariable UUID userId) {
+        List<Long> ids = wishlistRepository.findByUserId(userId).stream()
+                .map(w -> w.getProductId())
+                .toList();
+        return ResponseEntity.ok(ApiResponse.ok(ids));
     }
 }

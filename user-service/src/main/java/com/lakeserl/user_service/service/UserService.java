@@ -30,4 +30,6 @@ public interface UserService {
     List<UserInternalDTO> findAllByIds(List<UUID> ids);
 
     List<UUID> findUserIdsByBirthday(int month, int day);
+
+    UserDTO updateAvatarUrl(UUID userId, String avatarUrl);
 }
