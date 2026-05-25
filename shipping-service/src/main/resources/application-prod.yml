@@ -1,0 +1,8 @@
+management:
+  tracing:
+    sampling:
+      probability: 0.1
+logging:
+  level:
+    root: WARN
+    com.lakeserl.shipping_service: INFO

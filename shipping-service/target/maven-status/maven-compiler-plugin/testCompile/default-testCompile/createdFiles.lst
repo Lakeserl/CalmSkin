@@ -1,0 +1,3 @@
+com/lakeserl/shipping_service/ShippingServiceApplicationTests.class
+com/lakeserl/shipping_service/event/producer/ShipmentEventPublisherTest.class
+com/lakeserl/shipping_service/service/ShipmentServiceImplTest.class
