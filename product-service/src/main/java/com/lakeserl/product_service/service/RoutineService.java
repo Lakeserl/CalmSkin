@@ -1,4 +1,4 @@
-dpackage com.lakeserl.product_service.service;
+package com.lakeserl.product_service.service;
 
 import com.lakeserl.product_service.client.UserServiceClient;
 import com.lakeserl.product_service.dto.request.GenerateRoutineRequest;
