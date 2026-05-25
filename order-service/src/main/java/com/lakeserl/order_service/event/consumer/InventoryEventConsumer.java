@@ -2,6 +2,7 @@ package com.lakeserl.order_service.event.consumer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lakeserl.order_service.entity.Order;
+import com.lakeserl.order_service.entity.OrderItem;
 import com.lakeserl.order_service.entity.ProcessedKafkaEvent;
 import com.lakeserl.order_service.enums.OrderStatus;
 import com.lakeserl.order_service.event.payload.inbound.InventoryInsufficientEvent;
@@ -19,6 +20,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Slf4j
@@ -50,16 +55,8 @@ public class InventoryEventConsumer {
             orderRepository.findById(orderId).ifPresent(order -> {
                 if (order.getStatus() == OrderStatus.PENDING) {
                     orderStatusService.transitionTo(order, OrderStatus.CONFIRMED, "system", "Inventory stock reserved successfully");
-                    
-                    // Publish order.confirmed to trigger payment creation
-                    java.util.Map<String, Object> payload = new java.util.HashMap<>();
-                    payload.put("orderId", order.getId().toString());
-                    payload.put("orderNumber", order.getOrderNumber());
-                    payload.put("userId", order.getUserId());
-                    payload.put("totalAmount", order.getTotalAmount());
-                    payload.put("paymentMethod", order.getPaymentMethod().name());
-                    
-                    orderEventProducer.publish("order.confirmed", order.getId().toString(), payload);
+
+                    orderEventProducer.publish("order.confirmed", order.getId().toString(), buildOrderConfirmedPayload(order));
                     log.info("Published order.confirmed outbox event for orderId={}", orderId);
                 }
             });
@@ -71,6 +68,47 @@ public class InventoryEventConsumer {
             // Default DLQ handler will handle retries/DLQ
             throw new IllegalArgumentException("Failed to process event", ex);
         }
+    }
+
+    // Builds the order.confirmed payload. Original fields (orderId, orderNumber, userId, totalAmount,
+    // paymentMethod) are preserved verbatim — payment-service deserializes them as a strict record.
+    // Additive fields (shippingFee, shipping, items) are read by shipping-service to create labels
+    // without an extra REST round-trip. Lazy collections are safe to traverse here: this method runs
+    // inside the @KafkaListener's @Transactional, so the persistence session is open.
+    private Map<String, Object> buildOrderConfirmedPayload(Order order) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("orderId", order.getId().toString());
+        payload.put("orderNumber", order.getOrderNumber());
+        payload.put("userId", order.getUserId());
+        payload.put("totalAmount", order.getTotalAmount());
+        payload.put("paymentMethod", order.getPaymentMethod().name());
+        payload.put("shippingFee", order.getShippingFee());
+
+        Map<String, Object> shipping = new LinkedHashMap<>();
+        shipping.put("name", order.getShippingName());
+        shipping.put("phone", order.getShippingPhone());
+        shipping.put("street", order.getShippingStreet());
+        shipping.put("ward", order.getShippingWard());
+        shipping.put("district", order.getShippingDistrict());
+        shipping.put("province", order.getShippingProvince());
+        shipping.put("country", "VN");
+        payload.put("shipping", shipping);
+
+        List<Map<String, Object>> items = new ArrayList<>();
+        for (OrderItem item : order.getItems()) {
+            Map<String, Object> i = new LinkedHashMap<>();
+            i.put("orderItemId", item.getId());
+            i.put("productId", item.getProductId());
+            i.put("variantId", item.getVariantId());
+            i.put("productName", item.getProductName());
+            i.put("productSku", item.getProductSku());
+            i.put("quantity", item.getQuantity());
+            i.put("unitPrice", item.getUnitPrice());
+            i.put("subtotal", item.getSubtotal());
+            items.add(i);
+        }
+        payload.put("items", items);
+        return payload;
     }
 
     @KafkaListener(topics = "inventory.insufficient", groupId = "order-service")
