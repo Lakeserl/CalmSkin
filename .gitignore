@@ -11,3 +11,9 @@ surefire-reports/
 # mvnw.cmd
 user-service/output.log
 .claude
+.idea/
+IntelliLang.xml
+encodings.xml
+jarRepositories.xml
+.vscode/
+.worktreeinclude

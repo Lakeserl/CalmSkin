@@ -21,6 +21,7 @@ import org.springframework.web.server.ServerWebExchange;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
+import org.springframework.beans.factory.annotation.Value;
 import reactor.core.publisher.Mono;
 
 @Component
@@ -28,10 +29,13 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     private final JwtUtil jwtUtil;
     private final StringRedisTemplate redisTemplate;
+    private final String internalSecret;
 
-    public JwtAuthenticationFilter(JwtUtil jwtUtil, StringRedisTemplate redisTemplate) {
+    public JwtAuthenticationFilter(JwtUtil jwtUtil, StringRedisTemplate redisTemplate,
+            @Value("${app.internal-secret}") String internalSecret) {
         this.jwtUtil = jwtUtil;
         this.redisTemplate = redisTemplate;
+        this.internalSecret = internalSecret;
     }
 
     private static final Set<String> PUBLIC_PATHS = Set.of(
@@ -56,8 +60,21 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             "/api/v1/brands"
     );
 
+    // Headers that must only be written by this gateway — strip from all external requests.
+    private static final Set<String> INTERNAL_HEADERS = Set.of(
+            "X-User-Id", "X-User-Role", "X-User-Email", "X-User-Jti",
+            "X-Gateway-Secret", "X-Internal-Secret");
+
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+        // Strip client-supplied identity/secret headers, then re-add X-Gateway-Secret so
+        // downstream services can verify the request came through this gateway.
+        ServerHttpRequest stripped = exchange.getRequest().mutate()
+                .headers(h -> INTERNAL_HEADERS.forEach(h::remove))
+                .header("X-Gateway-Secret", internalSecret)
+                .build();
+        exchange = exchange.mutate().request(stripped).build();
+
         String path = exchange.getRequest().getPath().value();
 
         if (HttpMethod.OPTIONS.equals(exchange.getRequest().getMethod())) {

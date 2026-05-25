@@ -15,7 +15,8 @@ spring:
       globalcors:
         cors-configurations:
           '[/**]':
-            allowedOrigins: "*"
+            allowedOrigins:
+              - "${CORS_ALLOWED_ORIGIN:http://localhost:3000}"
             allowedMethods:
               - GET
               - POST
@@ -23,7 +24,12 @@ spring:
               - PATCH
               - DELETE
               - OPTIONS
-            allowedHeaders: "*"
+            allowedHeaders:
+              - Authorization
+              - Content-Type
+              - X-Requested-With
+              - Accept
+            allowCredentials: true
             exposedHeaders:
               - Authorization
             maxAge: 3600
@@ -49,6 +55,18 @@ spring:
           uri: lb://product-service
           predicates:
             - Path=/api/v1/products/**,/api/v1/categories/**,/api/v1/brands/**,/api/v1/ingredients/**
+
+        # Personalized recommendations (served by product-service)
+        - id: product-service-recommendations
+          uri: lb://product-service
+          predicates:
+            - Path=/api/v1/recommendations/**
+
+        # Skincare routine builder (served by product-service)
+        - id: product-service-routines
+          uri: lb://product-service
+          predicates:
+            - Path=/api/v1/routines/**
             
         - id: user-service-admin
           uri: lb://user-service
@@ -89,6 +107,37 @@ spring:
           uri: lb://payment-service
           predicates:
             - Path=/api/v1/admin/payments/**
+
+        - id: notification-service-notifications
+          uri: lb://notification-service
+          predicates:
+            - Path=/api/v1/notifications/**
+
+        - id: notification-service-admin
+          uri: lb://notification-service
+          predicates:
+            - Path=/api/v1/admin/notifications/**
+
+        - id: promotion-service-promotions
+          uri: lb://promotion-service
+          predicates:
+            - Path=/api/v1/promotions/**
+
+        - id: promotion-service-admin
+          uri: lb://promotion-service
+          predicates:
+            - Path=/api/v1/admin/promotions/**
+
+        # Review service
+        - id: review-service-reviews
+          uri: lb://review-service
+          predicates:
+            - Path=/api/v1/reviews/**
+
+        - id: review-service-admin
+          uri: lb://review-service
+          predicates:
+            - Path=/api/v1/admin/reviews/**
 
         # Internal endpoints — BLOCKED from external access
         # These should only be accessed via service-to-service calls
@@ -135,6 +184,27 @@ spring:
           filters:
             - RewritePath=/payment-service/(?<segment>.*), /${segment}
 
+        - id: notification-service-docs
+          uri: lb://notification-service
+          predicates:
+            - Path=/notification-service/v3/api-docs/**
+          filters:
+            - RewritePath=/notification-service/(?<segment>.*), /${segment}
+
+        - id: promotion-service-docs
+          uri: lb://promotion-service
+          predicates:
+            - Path=/promotion-service/v3/api-docs/**
+          filters:
+            - RewritePath=/promotion-service/(?<segment>.*), /${segment}
+
+        - id: review-service-docs
+          uri: lb://review-service
+          predicates:
+            - Path=/review-service/v3/api-docs/**
+          filters:
+            - RewritePath=/review-service/(?<segment>.*), /${segment}
+
 eureka:
   client:
     service-url:
@@ -161,11 +231,17 @@ springdoc:
         url: /order-service/v3/api-docs
       - name: Payment Service
         url: /payment-service/v3/api-docs
+      - name: Notification Service
+        url: /notification-service/v3/api-docs
+      - name: Promotion Service
+        url: /promotion-service/v3/api-docs
+      - name: Review Service
+        url: /review-service/v3/api-docs
 
 management:
   tracing:
     sampling:
-      probability: 1.0
+      probability: ${TRACING_SAMPLE_RATE:0.1}
   zipkin:
     tracing:
       endpoint: http://${ZIPKIN_HOST:localhost}:9411/api/v2/spans
@@ -203,3 +279,4 @@ logging:
 app:
   jwt:
     secret: ${JWT_SECRET}
+  internal-secret: ${INTERNAL_SECRET}
