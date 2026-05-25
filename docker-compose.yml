@@ -10,6 +10,10 @@ services:
       POSTGRES_DB_INVENTORY_SERVICE: ${POSTGRES_DB_INVENTORY_SERVICE}
       POSTGRES_DB_ORDER_SERVICE: ${POSTGRES_DB_ORDER_SERVICE}
       POSTGRES_DB_PAYMENT_SERVICE: ${POSTGRES_DB_PAYMENT_SERVICE}
+      POSTGRES_DB_NOTIFICATION_SERVICE: ${POSTGRES_DB_NOTIFICATION_SERVICE}
+      POSTGRES_DB_PROMOTION_SERVICE: ${POSTGRES_DB_PROMOTION_SERVICE}
+      POSTGRES_DB_REVIEW_SERVICE: ${POSTGRES_DB_REVIEW_SERVICE}
+      POSTGRES_DB_SHIPPING_SERVICE: ${POSTGRES_DB_SHIPPING_SERVICE}
     ports:
       - "5433:5432"
     volumes:
@@ -22,6 +26,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+          cpus: "1.0"
 
   redis:
     image: redis:7-alpine
@@ -34,6 +43,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+          cpus: "0.25"
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.6.0
@@ -42,6 +56,11 @@ services:
       ZOOKEEPER_TICK_TIME: 2000
     networks:
       - calm-skin-network
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "0.5"
 
   kafka:
     image: confluentinc/cp-kafka:7.6.0
@@ -63,11 +82,18 @@ services:
       interval: 15s
       timeout: 10s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+          cpus: "1.0"
 
   discovery-service:
     build: ./discovery-service
     ports:
       - "8761:8761"
+    environment:
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=50.0 -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -Xms64m -Xmx192m"
     networks:
       - calm-skin-network
     healthcheck:
@@ -75,14 +101,21 @@ services:
       interval: 15s
       timeout: 10s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 384m
+          cpus: "0.5"
 
   api-gateway:
     build: ./api-gateway
     ports:
       - "8080:8080"
     environment:
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=50.0 -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -Xms64m -Xmx192m"
       EUREKA_URI: http://discovery-service:8761/eureka
       JWT_SECRET: ${JWT_SECRET}
+      INTERNAL_SECRET: ${INTERNAL_SECRET}
       SPRING_DATA_REDIS_HOST: redis
       ZIPKIN_HOST: zipkin
     depends_on:
@@ -97,12 +130,18 @@ services:
       interval: 15s
       timeout: 10s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "0.5"
 
   user-service:
     build: ./user-service
     ports:
       - "8088:8088"
     environment:
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=50.0 -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -Xms64m -Xmx192m"
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB_USER_SERVICE: ${POSTGRES_DB_USER_SERVICE}
@@ -129,12 +168,18 @@ services:
       interval: 15s
       timeout: 10s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "0.5"
 
   product-service:
     build: ./product-service
     ports:
       - "8086:8086"
     environment:
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=50.0 -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -Xms64m -Xmx192m"
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB_PRODUCT_SERVICE: ${POSTGRES_DB_PRODUCT_SERVICE}
@@ -161,12 +206,18 @@ services:
       interval: 15s
       timeout: 10s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "0.5"
 
   inventory-service:
     build: ./inventory-service
     ports:
       - "8084:8084"
     environment:
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=50.0 -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -Xms64m -Xmx192m"
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB_INVENTORY_SERVICE: ${POSTGRES_DB_INVENTORY_SERVICE}
@@ -193,12 +244,18 @@ services:
       interval: 15s
       timeout: 10s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "0.5"
 
   order-service:
     build: ./order-service
     ports:
       - "8082:8082"
     environment:
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=50.0 -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -Xms64m -Xmx192m"
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB_ORDER_SERVICE: ${POSTGRES_DB_ORDER_SERVICE}
@@ -225,12 +282,18 @@ services:
       interval: 15s
       timeout: 10s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "0.5"
 
   payment-service:
     build: ./payment-service
     ports:
       - "8085:8085"
     environment:
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=50.0 -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -Xms64m -Xmx192m"
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB_PAYMENT_SERVICE: ${POSTGRES_DB_PAYMENT_SERVICE}
@@ -257,6 +320,168 @@ services:
       interval: 15s
       timeout: 10s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "0.5"
+
+  notification-service:
+    build: ./notification-service
+    ports:
+      - "8089:8089"
+    environment:
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=50.0 -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -Xms64m -Xmx192m"
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB_NOTIFICATION_SERVICE: ${POSTGRES_DB_NOTIFICATION_SERVICE}
+      INTERNAL_SECRET: ${INTERNAL_SECRET}
+      EUREKA_URI: http://discovery-service:8761/eureka
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB_NOTIFICATION_SERVICE}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      ZIPKIN_HOST: zipkin
+      MAIL_HOST: ${MAIL_HOST}
+      MAIL_PORT: ${MAIL_PORT}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      MAIL_FROM: ${MAIL_FROM}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
+      VAPID_SUBJECT: ${VAPID_SUBJECT}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+    networks:
+      - calm-skin-network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8089/actuator/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "0.5"
+
+  promotion-service:
+    build: ./promotion-service
+    ports:
+      - "8087:8087"
+    environment:
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=50.0 -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -Xms64m -Xmx192m"
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB_PROMOTION_SERVICE: ${POSTGRES_DB_PROMOTION_SERVICE}
+      INTERNAL_SECRET: ${INTERNAL_SECRET}
+      EUREKA_URI: http://discovery-service:8761/eureka
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB_PROMOTION_SERVICE}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      ZIPKIN_HOST: zipkin
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+    networks:
+      - calm-skin-network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8087/actuator/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "0.5"
+
+  review-service:
+    build: ./review-service
+    ports:
+      - "8091:8091"
+    environment:
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=50.0 -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -Xms64m -Xmx192m"
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB_REVIEW_SERVICE: ${POSTGRES_DB_REVIEW_SERVICE}
+      JWT_SECRET: ${JWT_SECRET}
+      INTERNAL_SECRET: ${INTERNAL_SECRET}
+      EUREKA_URI: http://discovery-service:8761/eureka
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB_REVIEW_SERVICE}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      ZIPKIN_HOST: zipkin
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+    networks:
+      - calm-skin-network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8091/actuator/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "0.5"
+
+  shipping-service:
+    build: ./shipping-service
+    ports:
+      - "8090:8090"
+    environment:
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=50.0 -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -Xms64m -Xmx192m"
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB_SHIPPING_SERVICE: ${POSTGRES_DB_SHIPPING_SERVICE}
+      JWT_SECRET: ${JWT_SECRET}
+      INTERNAL_SECRET: ${INTERNAL_SECRET}
+      EUREKA_URI: http://discovery-service:8761/eureka
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB_SHIPPING_SERVICE}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      ZIPKIN_HOST: zipkin
+      SHIPPING_WEBHOOK_SECRET: ${SHIPPING_WEBHOOK_SECRET}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+    networks:
+      - calm-skin-network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8090/actuator/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "0.5"
 
   zipkin:
     image: openzipkin/zipkin:latest
@@ -269,6 +494,11 @@ services:
       interval: 15s
       timeout: 10s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "0.5"
 
   prometheus:
     image: prom/prometheus:latest
@@ -279,18 +509,29 @@ services:
       - prometheus-data:/prometheus
     networks:
       - calm-skin-network
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "0.5"
+
   grafana:
     image: grafana/grafana:latest
     ports:
       - "3000:3000"
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-changeme}
     volumes:
       - grafana-data:/var/lib/grafana
     depends_on:
       - prometheus
     networks:
       - calm-skin-network
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+          cpus: "0.25"
 
 networks:
   calm-skin-network:
