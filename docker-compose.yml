@@ -14,6 +14,7 @@ services:
       POSTGRES_DB_PROMOTION_SERVICE: ${POSTGRES_DB_PROMOTION_SERVICE}
       POSTGRES_DB_REVIEW_SERVICE: ${POSTGRES_DB_REVIEW_SERVICE}
       POSTGRES_DB_SHIPPING_SERVICE: ${POSTGRES_DB_SHIPPING_SERVICE}
+      POSTGRES_DB_SUBSCRIPTION_SERVICE: ${POSTGRES_DB_SUBSCRIPTION_SERVICE}
     ports:
       - "5433:5432"
     volumes:
@@ -474,6 +475,44 @@ services:
       - calm-skin-network
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8090/actuator/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "0.5"
+
+  subscription-service:
+    build: ./subscription-service
+    ports:
+      - "8092:8092"
+    environment:
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=50.0 -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -Xms64m -Xmx192m"
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB_SUBSCRIPTION_SERVICE: ${POSTGRES_DB_SUBSCRIPTION_SERVICE}
+      JWT_SECRET: ${JWT_SECRET}
+      INTERNAL_SECRET: ${INTERNAL_SECRET}
+      EUREKA_URI: http://discovery-service:8761/eureka
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB_SUBSCRIPTION_SERVICE}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      ZIPKIN_HOST: zipkin
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+    networks:
+      - calm-skin-network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8092/actuator/health"]
       interval: 15s
       timeout: 10s
       retries: 5

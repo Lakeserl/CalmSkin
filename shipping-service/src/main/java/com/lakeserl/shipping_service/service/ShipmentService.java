@@ -8,6 +8,8 @@ import com.lakeserl.shipping_service.event.payload.inbound.OrderConfirmedEvent;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.UUID;
+
 public interface ShipmentService {
 
     // Idempotent: returns the existing shipment if one already exists for the order.
@@ -33,4 +35,9 @@ public interface ShipmentService {
     ShipmentDTO getByOrderNumber(String orderNumber);
 
     Page<ShipmentDTO> listByStatus(ShipmentStatus status, Pageable pageable);
+
+    Page<ShipmentDTO> listByUserId(UUID userId, Pageable pageable);
+
+    // Ownership-scoped: throws ShipmentNotFoundException if not found or userId doesn't match
+    ShipmentDTO getByOrderNumberForUser(String orderNumber, UUID userId);
 }

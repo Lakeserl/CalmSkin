@@ -210,6 +210,28 @@ public class ShipmentServiceImpl implements ShipmentService {
         return page.map(s -> mapper.toDto(s, List.of()));
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public Page<ShipmentDTO> listByUserId(UUID userId, Pageable pageable) {
+        return shipmentRepository.findByUserId(userId, pageable)
+                .map(s -> mapper.toDto(s, trackingRepository.findByShipmentIdOrderByOccurredAtDesc(s.getId())));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ShipmentDTO getByOrderNumberForUser(String orderNumber, UUID userId) {
+        Shipment shipment = shipmentRepository.findByOrderNumber(orderNumber)
+                .orElseThrow(() -> new ShipmentNotFoundException(
+                        "Shipment not found for orderNumber=" + orderNumber));
+        if (!shipment.getUserId().equals(userId)) {
+            // Return 404 instead of 403 to avoid leaking order existence to
+            // other users (IDOR mitigation).
+            throw new ShipmentNotFoundException(
+                    "Shipment not found for orderNumber=" + orderNumber);
+        }
+        return mapper.toDto(shipment, trackingRepository.findByShipmentIdOrderByOccurredAtDesc(shipment.getId()));
+    }
+
     private Shipment applyTransition(Shipment shipment, ShipmentStatus newStatus, String description,
                                       String location, TrackingEventSource source, String rawPayload) {
         ShipmentStatus current = shipment.getStatus();

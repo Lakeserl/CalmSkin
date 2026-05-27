@@ -33,6 +33,9 @@ public class SecurityConfig {
                     "/webhooks/**"
                 ).permitAll()
                 .requestMatchers("/api/v1/admin/**").hasAnyRole("ADMIN", "STAFF")
+                // Customer-facing endpoints: authenticated users can only see their own data
+                // (ownership enforcement is done inside CustomerShipmentController via X-User-Id)
+                .requestMatchers("/api/v1/shipments/**").authenticated()
                 .anyRequest().authenticated()
             );
 
