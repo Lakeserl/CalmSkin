@@ -1,0 +1,12 @@
+User metadata:
+- Age: {age}
+- Self-reported skin type: {selfSkinType}
+- Self-reported concerns: {concerns}
+- Allergies/sensitivities: {allergies}
+
+OpenCV extracted features:
+{cvFeatures}
+
+Please analyze the provided face image along with the above metadata.
+Focus on visible skin conditions, texture, tone, and any areas of concern.
+Cross-reference the user's self-reported type with what you observe in the image.

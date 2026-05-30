@@ -1,0 +1,147 @@
+server:
+  port: 8095
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 12MB
+
+spring:
+  application:
+    name: ai-skin-analysis-service
+  config:
+    import:
+      - optional:file:.env[.properties]
+      - optional:file:../.env[.properties]
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/${POSTGRES_DB_AI_SKIN_ANALYSIS:calmskin_ai_skin_analysis}}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      pool-name: ai-skin-analysis-pool
+      maximum-pool-size: 10
+      minimum-idle: 3
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      leak-detection-threshold: 60000
+      connection-test-query: SELECT 1
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        show_sql: false
+        jdbc:
+          batch_size: 25
+        order_inserts: true
+        order_updates: true
+    generate-ddl: false
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 1
+    locations: classpath:db/migration
+
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: 6379
+
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+
+  ai:
+    google:
+      gemini:
+        api-key: ${GEMINI_API_KEY:dummy-key-replace-me}
+        chat:
+          options:
+            model: ${GEMINI_MODEL_VISION:gemini-3.5-flash}
+            temperature: 0.1
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: ${EUREKA_URI:http://localhost:8761/eureka}
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+
+management:
+  tracing:
+    sampling:
+      probability: ${TRACING_SAMPLE_RATE:0.1}
+  zipkin:
+    tracing:
+      endpoint: http://${ZIPKIN_HOST:localhost}:9411/api/v2/spans
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+      environment: ${ENVIRONMENT:dev}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      percentiles:
+        http.server.requests: 0.5,0.9,0.95,0.99
+
+springdoc:
+  swagger-ui:
+    path: /docs
+
+app:
+  internal:
+    secret: ${INTERNAL_SECRET}
+  ai:
+    daily-limit-skin-analysis: ${AI_DAILY_LIMIT_SKIN_ANALYSIS:10}
+    vision-model: ${GEMINI_MODEL_VISION:gemini-3.5-flash}
+    # Pool size caps concurrent native Mat allocations (~50-100 MB each off-heap).
+    # Set to floor(containerMemoryMB / 100) - 2 in K8s pod spec via APP_AI_ANALYSIS_POOL_MAX_SIZE.
+    analysis-pool-core-size: ${APP_AI_ANALYSIS_POOL_CORE_SIZE:2}
+    analysis-pool-max-size: ${APP_AI_ANALYSIS_POOL_MAX_SIZE:4}
+  cloudinary:
+    url: ${CLOUDINARY_URL:cloudinary://key:secret@cloud}
+    upload-folder: ${CLOUDINARY_UPLOAD_FOLDER:calmskin}
+  consent:
+    version: ${CONSENT_VERSION:1.0}
+  image:
+    max-size-bytes: 10485760
+    allowed-types: image/jpeg,image/png,image/webp
+    retention-days: ${IMAGE_RETENTION_DAYS:30}
+  services:
+    product-service-url: ${PRODUCT_SERVICE_URL:http://product-service}
+    user-service-url: ${USER_SERVICE_URL:http://user-service}
+
+logging:
+  pattern:
+    level: "%5p [${spring.application.name},%X{traceId:-},%X{spanId:-}]"
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{traceId:-}] [%X{requestId}] %-5level %logger{36} - %msg%n"
+  level:
+    root: INFO
+    com.lakeserl.ai_skin_analysis_service: INFO
+    org.springframework.ai: INFO
