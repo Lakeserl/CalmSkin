@@ -56,9 +56,9 @@ spring:
           predicates:
             - Path=/api/v1/products/**,/api/v1/categories/**,/api/v1/brands/**,/api/v1/ingredients/**
 
-        # Personalized recommendations (served by product-service)
-        - id: product-service-recommendations
-          uri: lb://product-service
+        # Recommendations (ai-recommendation-service)
+        - id: ai-recommendation-service-public
+          uri: lb://ai-recommendation-service
           predicates:
             - Path=/api/v1/recommendations/**
 
@@ -139,6 +139,56 @@ spring:
           predicates:
             - Path=/api/v1/admin/reviews/**
 
+        # Shipping service — customer tracking
+        - id: shipping-service-shipments
+          uri: lb://shipping-service
+          predicates:
+            - Path=/api/v1/shipments/**
+
+        - id: shipping-service-admin
+          uri: lb://shipping-service
+          predicates:
+            - Path=/api/v1/admin/shipments/**
+
+        # Subscription service — customer subscriptions
+        - id: subscription-service-subscriptions
+          uri: lb://subscription-service
+          predicates:
+            - Path=/api/v1/subscriptions/**
+
+        - id: subscription-service-admin
+          uri: lb://subscription-service
+          predicates:
+            - Path=/api/v1/admin/subscriptions/**
+
+        # AI Skin Analysis service
+        - id: ai-skin-analysis-service-public
+          uri: lb://ai-skin-analysis-service
+          predicates:
+            - Path=/api/v1/ai/skin-analysis/**
+
+        - id: ai-skin-analysis-service-admin
+          uri: lb://ai-skin-analysis-service
+          predicates:
+            - Path=/api/v1/admin/ai/skin-analysis/**
+
+        # AI Chatbot service
+        - id: ai-chatbot-service-public
+          uri: lb://ai-chatbot-service
+          predicates:
+            - Path=/api/v1/ai/chat/**
+
+        - id: ai-chatbot-service-admin
+          uri: lb://ai-chatbot-service
+          predicates:
+            - Path=/api/v1/admin/ai/chat/**
+
+        # Search service
+        - id: search-service-public
+          uri: lb://search-service
+          predicates:
+            - Path=/api/v1/search/**
+
         # Internal endpoints — BLOCKED from external access
         # These should only be accessed via service-to-service calls
         # The gateway rejects any external request to /internal/**
@@ -205,6 +255,48 @@ spring:
           filters:
             - RewritePath=/review-service/(?<segment>.*), /${segment}
 
+        - id: shipping-service-docs
+          uri: lb://shipping-service
+          predicates:
+            - Path=/shipping-service/v3/api-docs/**
+          filters:
+            - RewritePath=/shipping-service/(?<segment>.*), /${segment}
+
+        - id: subscription-service-docs
+          uri: lb://subscription-service
+          predicates:
+            - Path=/subscription-service/v3/api-docs/**
+          filters:
+            - RewritePath=/subscription-service/(?<segment>.*), /${segment}
+
+        - id: ai-skin-analysis-service-docs
+          uri: lb://ai-skin-analysis-service
+          predicates:
+            - Path=/ai-skin-analysis-service/v3/api-docs/**
+          filters:
+            - RewritePath=/ai-skin-analysis-service/(?<segment>.*), /${segment}
+
+        - id: ai-chatbot-service-docs
+          uri: lb://ai-chatbot-service
+          predicates:
+            - Path=/ai-chatbot-service/v3/api-docs/**
+          filters:
+            - RewritePath=/ai-chatbot-service/(?<segment>.*), /${segment}
+
+        - id: ai-recommendation-service-docs
+          uri: lb://ai-recommendation-service
+          predicates:
+            - Path=/ai-recommendation-service/v3/api-docs/**
+          filters:
+            - RewritePath=/ai-recommendation-service/(?<segment>.*), /${segment}
+
+        - id: search-service-docs
+          uri: lb://search-service
+          predicates:
+            - Path=/search-service/v3/api-docs/**
+          filters:
+            - RewritePath=/search-service/(?<segment>.*), /${segment}
+
 eureka:
   client:
     service-url:
@@ -237,6 +329,18 @@ springdoc:
         url: /promotion-service/v3/api-docs
       - name: Review Service
         url: /review-service/v3/api-docs
+      - name: Shipping Service
+        url: /shipping-service/v3/api-docs
+      - name: Subscription Service
+        url: /subscription-service/v3/api-docs
+      - name: AI Skin Analysis Service
+        url: /ai-skin-analysis-service/v3/api-docs
+      - name: AI Chatbot Service
+        url: /ai-chatbot-service/v3/api-docs
+      - name: AI Recommendation Service
+        url: /ai-recommendation-service/v3/api-docs
+      - name: Search Service
+        url: /search-service/v3/api-docs
 
 management:
   tracing:

@@ -47,6 +47,9 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             "/api/v1/auth/verify-email",
             "/api/v1/auth/resend-verification",
             "/api/v1/auth/oauth2/google",
+            // Payment provider IPN/webhook callbacks arrive with no Authorization header.
+            // Invariant §9: gateway blocks /internal/** — webhook paths are /api/v1/payments/webhook/**.
+            "/api/v1/payments/webhook/",
             "/swagger-ui",
             "/v3/api-docs",
             "/actuator/health"
@@ -57,7 +60,9 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     private static final Set<String> PUBLIC_GET_PREFIXES = Set.of(
             "/api/v1/products",
             "/api/v1/categories",
-            "/api/v1/brands"
+            "/api/v1/brands",
+            "/api/v1/ingredients",
+            "/api/v1/reviews"
     );
 
     // Headers that must only be written by this gateway — strip from all external requests.
