@@ -1,5 +1,5 @@
 server:
-  port: ${SERVER_PORT:8089}
+  port: ${SERVER_PORT:8088}
 
 spring:
   application:
@@ -125,7 +125,7 @@ springdoc:
     operations-sorter: alpha
 
 app:
-  internal-secret: ${INTERNAL_SECRET:dev-internal-secret-change-in-prod}
+  internal-secret: ${INTERNAL_SECRET}
 
   notification:
     quiet-zone-offset: "+07:00"
