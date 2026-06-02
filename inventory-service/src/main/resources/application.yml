@@ -1,5 +1,5 @@
 server:
-  port: 8084
+  port: 8083
 
 internal:
   secret: ${INTERNAL_SECRET}
@@ -35,8 +35,8 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         id:
           new_generator_mappings: false
-        show_sql: true
-        format_sql: true
+        show_sql: false
+        format_sql: false
         jdbc:
           batch_size: 25
           fetch_size: 50
