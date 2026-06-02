@@ -2,47 +2,64 @@ package com.lakeserl.user_service.event;
 
 import java.util.Map;
 
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.lakeserl.user_service.model.entity.OutboxEvent;
+import com.lakeserl.user_service.repository.OutboxRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Writes Kafka events to the outbox_events table within the caller's transaction.
+ * OutboxEventPublisher scheduler delivers them to Kafka asynchronously.
+ * This guarantees atomicity between the business write and the event — Invariant §14.
+ */
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class KafkaProducer {
 
-    private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final OutboxRepository outboxRepository;
+    private final ObjectMapper objectMapper;
 
     public void sendUserRegistered(String userId, String email) {
-        send("user.registered", Map.of("userId", userId, "email", email));
+        save("user.registered", userId, Map.of("userId", userId, "email", email));
     }
 
     public void sendUserEmailVerified(String userId, String email) {
-        send("user.email-verified", Map.of("userId", userId, "email", email));
+        save("user.email-verified", userId, Map.of("userId", userId, "email", email));
     }
 
     public void sendPasswordReset(String userId, String email, String otp) {
-        send("user.password-reset", Map.of("userId", userId, "email", email, "otp", otp));
+        save("user.password-reset", userId, Map.of("userId", userId, "email", email, "otp", otp));
     }
 
     public void sendUserLoggedIn(String userId, String ipAddress) {
-        send("user.logged-in", Map.of("userId", userId, "ipAddress", ipAddress));
+        save("user.logged-in", userId, Map.of("userId", userId, "ipAddress", ipAddress));
     }
 
     public void sendUserBanned(String userId, String email) {
-        send("user.banned", Map.of("userId", userId, "email", email));
+        save("user.banned", userId, Map.of("userId", userId, "email", email));
     }
 
-    private void send(String topic, Object payload) {
-        kafkaTemplate.send(topic, payload).whenComplete((result, ex) -> {
-            if (ex != null) {
-                log.error("Failed to publish Kafka event: topic={}, error={}", topic, ex.getMessage(), ex);
-            } else {
-                log.debug("Kafka event sent: topic={}, partition={}, offset={}",
-                        topic, result.getRecordMetadata().partition(), result.getRecordMetadata().offset());
-            }
-        });
+    public void sendSkinProfileUpdated(String userId) {
+        save("user.skin-profile-updated", userId, Map.of("userId", userId));
+    }
+
+    private void save(String topic, String aggregateId, Map<String, Object> payload) {
+        try {
+            outboxRepository.save(OutboxEvent.builder()
+                    .aggregateType("User")
+                    .aggregateId(aggregateId)
+                    .eventType(topic)
+                    .payload(objectMapper.writeValueAsString(payload))
+                    .build());
+        } catch (JsonProcessingException e) {
+            log.error("Failed to serialize outbox payload for topic={} aggregateId={}", topic, aggregateId, e);
+            throw new IllegalStateException("Outbox serialization failed for topic: " + topic, e);
+        }
     }
 }
