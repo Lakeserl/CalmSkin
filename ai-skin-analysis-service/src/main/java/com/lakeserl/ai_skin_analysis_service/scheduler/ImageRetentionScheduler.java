@@ -21,8 +21,10 @@ public class ImageRetentionScheduler {
     private final SkinAnalysisSessionRepository sessionRepository;
     private final CloudinaryService cloudinaryService;
 
-    // Decree 13/2023 data minimization: processed face images must not be kept
-    // longer than necessary. Default 30 days; override via IMAGE_RETENTION_DAYS.
+    // Decree 13/2023 data minimization: processed (normalized) face images must not be kept
+    // longer than necessary. Original images are never stored on Cloudinary — the processor
+    // uploads only the OpenCV-normalized image (EXIF-stripped). This scheduler handles
+    // the processed image TTL only. Default 30 days; override via IMAGE_RETENTION_DAYS.
     @Value("${app.image.retention-days:30}")
     private int retentionDays;
 
@@ -31,7 +33,7 @@ public class ImageRetentionScheduler {
     public void purgeExpiredImages() {
         LocalDateTime cutoff = LocalDateTime.now().minusDays(retentionDays);
         List<SkinAnalysisSession> expired =
-                sessionRepository.findByProcessedImageUrlIsNotNullAndCreatedAtBefore(cutoff);
+                sessionRepository.findTop100ByProcessedImageUrlIsNotNullAndCreatedAtBefore(cutoff);
 
         if (expired.isEmpty()) {
             log.debug("Retention purge: no expired images (cutoff={})", cutoff);

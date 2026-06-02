@@ -17,9 +17,14 @@ import java.util.concurrent.RejectedExecutionException;
 @EnableScheduling
 public class AsyncConfig {
 
-    // Pool size = max concurrent native Mat allocations. Each analysis holds ~50-100 MB off-heap.
-    // K8s tuning formula: maxPoolSize = floor(containerMemoryMB / 100) - 2 (JVM headroom).
-    // Default 2/4 suits a 512 MB container. Set APP_AI_ANALYSIS_POOL_MAX_SIZE in the pod spec.
+    // Pool size = max concurrent off-heap Mat allocations (~100 MB each from OpenCV).
+    // Mat memory is OUTSIDE -Xmx — container limit must hold heap AND native simultaneously.
+    // Correct K8s tuning formula (solve for N):
+    //   N = (containerMB - Xmx - 300) / 100
+    // 300 MB = JVM baseline: metaspace + thread stacks + code cache + Kafka/JPA/misc buffers.
+    // Example: 2 GB container, -Xmx 1 GB → (2048 - 1024 - 300) / 100 ≈ 7 → set max=7.
+    // Default core=2 / max=4 is safe for a 1 GB container with -Xmx 512 MB: (1024-512-300)/100 ≈ 2.
+    // Set APP_AI_ANALYSIS_POOL_MAX_SIZE in the pod spec; must be computed against actual -Xmx.
     @Value("${app.ai.analysis-pool-core-size:2}")
     private int corePoolSize;
 

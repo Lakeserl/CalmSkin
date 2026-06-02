@@ -30,5 +30,7 @@ public interface SkinAnalysisSessionRepository extends JpaRepository<SkinAnalysi
     @Query("SELECT COALESCE(AVG(s.tokensUsed), 0) FROM SkinAnalysisSession s WHERE s.tokensUsed IS NOT NULL")
     double avgTokensUsed();
 
-    List<SkinAnalysisSession> findByProcessedImageUrlIsNotNullAndCreatedAtBefore(LocalDateTime cutoff);
+    // LIMIT 100 per run: retention job processes at most 100 sessions per nightly execution.
+    // Prevents full-table lock if retention days drops suddenly or backlog accumulates.
+    List<SkinAnalysisSession> findTop100ByProcessedImageUrlIsNotNullAndCreatedAtBefore(LocalDateTime cutoff);
 }
