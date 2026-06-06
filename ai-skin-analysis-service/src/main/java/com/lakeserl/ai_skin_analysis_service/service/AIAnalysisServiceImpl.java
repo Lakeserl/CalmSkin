@@ -2,7 +2,6 @@ package com.lakeserl.ai_skin_analysis_service.service;
 
 import com.lakeserl.ai_skin_analysis_service.ai.GeminiClient;
 import com.lakeserl.ai_skin_analysis_service.ai.SkinAnalysisAiResult;
-import com.lakeserl.ai_skin_analysis_service.exception.AIServiceUnavailableException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -21,8 +20,10 @@ public class AIAnalysisServiceImpl implements AIAnalysisService {
             log.info("Calling Gemini for skin analysis, imageSize={} bytes", normalizedImageBytes.length);
             return geminiClient.analyzeImage(normalizedImageBytes, features, age, selfSkinType, concerns);
         } catch (Exception e) {
-            log.error("AI analysis failed: {}", e.getMessage(), e);
-            throw new AIServiceUnavailableException("AI analysis service is temporarily unavailable: " + e.getMessage());
+            // Never fail the whole session on an AI error. The processor records it as
+            // COMPLETED_DEGRADED via the degraded flag and the user still gets a basic result.
+            log.error("AI analysis failed: {} — returning degraded fallback", e.getMessage(), e);
+            return SkinAnalysisAiResult.degradedFallback(0L);
         }
     }
 }

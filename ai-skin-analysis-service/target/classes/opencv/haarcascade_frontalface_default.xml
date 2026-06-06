@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<!--
+  PLACEHOLDER — Replace this file with the real Haar cascade XML before building.
+
+  Download the real file from:
+  https://raw.githubusercontent.com/opencv/opencv/4.x/data/haarcascades/haarcascade_frontalface_default.xml
+
+  Or the Dockerfile will attempt to download it automatically during image build.
+  If the file is absent or invalid, FaceDetector falls back to pass-all mode
+  (all images are accepted without face detection).
+-->

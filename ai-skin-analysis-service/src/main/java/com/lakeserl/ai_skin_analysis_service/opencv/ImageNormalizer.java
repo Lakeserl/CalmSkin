@@ -1,6 +1,7 @@
 package com.lakeserl.ai_skin_analysis_service.opencv;
 
 import lombok.extern.slf4j.Slf4j;
+import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.opencv.opencv_core.Mat;
 import org.bytedeco.opencv.opencv_core.Size;
 import org.springframework.stereotype.Component;
@@ -20,7 +21,7 @@ public class ImageNormalizer {
         Mat matWrapper = null;
         Mat src = null;
         Mat resized = null;
-        Mat outputMat = null;
+        BytePointer outputBuf = null;
         try {
             matWrapper = new Mat(1, imageBytes.length, org.bytedeco.opencv.global.opencv_core.CV_8UC1);
             matWrapper.data().put(imageBytes);
@@ -43,17 +44,17 @@ public class ImageNormalizer {
             resize(src, resized, targetSize);
             targetSize.close();
 
-            outputMat = new Mat();
-            imencode(".jpg", resized, outputMat);
-            byte[] result = new byte[(int) outputMat.total()];
-            outputMat.data().get(result);
+            outputBuf = new BytePointer();
+            imencode(".jpg", resized, outputBuf);
+            byte[] result = new byte[(int) outputBuf.limit()];
+            outputBuf.get(result);
             return result;
 
         } catch (Exception e) {
             log.error("Image normalization failed: {} — returning original bytes", e.getMessage());
             return imageBytes;
         } finally {
-            if (outputMat != null) outputMat.close();
+            if (outputBuf != null) outputBuf.close();
             if (resized != null) resized.close();
             if (src != null) src.close();
             if (matWrapper != null) matWrapper.close();

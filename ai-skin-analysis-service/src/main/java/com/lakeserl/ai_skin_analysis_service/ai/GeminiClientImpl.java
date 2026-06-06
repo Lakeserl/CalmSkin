@@ -9,8 +9,8 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.google.ai.gemini.GoogleAiGeminiChatOptions;
-import org.springframework.ai.model.Media;
+import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
+import org.springframework.ai.content.Media;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.MimeTypeUtils;
@@ -36,18 +36,26 @@ public class GeminiClientImpl implements GeminiClient {
         String userPromptText = promptBuilder.buildUserPrompt(features, age, selfSkinType, concerns);
 
         Media media = new Media(MimeTypeUtils.IMAGE_JPEG, new ByteArrayResource(imageBytes));
-        UserMessage userMessage = new UserMessage(userPromptText, List.of(media));
+        UserMessage userMessage = UserMessage.builder().text(userPromptText).media(media).build();
         SystemMessage systemMessage = new SystemMessage(systemPromptText);
 
-        // Tell Gemini to emit raw JSON — eliminates markdown fence stripping and parse fragility
-        GoogleAiGeminiChatOptions structuredOptions = GoogleAiGeminiChatOptions.builder()
+        GoogleGenAiChatOptions structuredOptions = GoogleGenAiChatOptions.builder()
                 .responseMimeType("application/json")
                 .build();
 
         Prompt prompt = new Prompt(List.of(systemMessage, userMessage), structuredOptions);
 
         long startTime = System.currentTimeMillis();
-        ChatResponse response = chatModel.call(prompt);
+        ChatResponse response;
+        try {
+            response = chatModel.call(prompt);
+        } catch (Exception e) {
+            // Gemini outage / 4xx / timeout — degrade instead of failing the session.
+            long elapsed = System.currentTimeMillis() - startTime;
+            log.error("Gemini API call failed after {}ms: {} — returning degraded fallback",
+                    elapsed, e.getMessage(), e);
+            return SkinAnalysisAiResult.degradedFallback(elapsed);
+        }
         long elapsed = System.currentTimeMillis() - startTime;
 
         String content = response.getResult().getOutput().getText();
@@ -73,6 +81,7 @@ public class GeminiClientImpl implements GeminiClient {
                         .tokensInput(0)
                         .tokensOutput(0)
                         .responseTimeMs(elapsed)
+                        .degraded(true)
                         .build();
             }
 
@@ -105,17 +114,8 @@ public class GeminiClientImpl implements GeminiClient {
                     .build();
 
         } catch (Exception e) {
-            log.error("Failed to parse Gemini response: {}", e.getMessage());
-            return SkinAnalysisAiResult.builder()
-                    .detectedSkinType("NORMAL")
-                    .concerns(List.of())
-                    .morningSteps(List.of("CLEANSE", "MOISTURIZE", "SPF"))
-                    .eveningSteps(List.of("CLEANSE", "MOISTURIZE"))
-                    .advice("Analysis completed with limited results.")
-                    .tokensInput(0)
-                    .tokensOutput(0)
-                    .responseTimeMs(elapsed)
-                    .build();
+            log.error("Failed to parse Gemini response: {} — returning degraded fallback", e.getMessage());
+            return SkinAnalysisAiResult.degradedFallback(elapsed);
         }
     }
 
@@ -160,7 +160,7 @@ public class GeminiClientImpl implements GeminiClient {
     private int extractTokensInput(ChatResponse response) {
         try {
             if (response.getMetadata() != null && response.getMetadata().getUsage() != null) {
-                Long promptTokens = response.getMetadata().getUsage().getPromptTokens();
+                Integer promptTokens = response.getMetadata().getUsage().getPromptTokens();
                 return promptTokens != null ? promptTokens.intValue() : 0;
             }
         } catch (Exception e) {
@@ -172,7 +172,7 @@ public class GeminiClientImpl implements GeminiClient {
     private int extractTokensOutput(ChatResponse response) {
         try {
             if (response.getMetadata() != null && response.getMetadata().getUsage() != null) {
-                Long completionTokens = response.getMetadata().getUsage().getCompletionTokens();
+                Integer completionTokens = response.getMetadata().getUsage().getCompletionTokens();
                 return completionTokens != null ? completionTokens.intValue() : 0;
             }
         } catch (Exception e) {

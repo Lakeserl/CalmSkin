@@ -55,17 +55,17 @@ public class FeatureExtractor {
             Scalar meanS = mean(sChannel);
 
             Map<String, Object> features = new LinkedHashMap<>();
-            features.put("brightness", Math.round(meanV.val(0)));
-            features.put("hue", Math.round(meanH.val(0)));
-            features.put("saturation", Math.round(meanS.val(0)));
+            features.put("brightness", Math.round(meanV.get(0)));
+            features.put("hue", Math.round(meanH.get(0)));
+            features.put("saturation", Math.round(meanS.get(0)));
             features.put("width", src.cols());
             features.put("height", src.rows());
 
-            double hueVal = meanH.val(0);
-            double satVal = meanS.val(0);
+            double hueVal = meanH.get(0);
+            double satVal = meanS.get(0);
             boolean hasRedness = (hueVal < 15 || hueVal > 165) && satVal > 80;
             features.put("hasRedness", hasRedness);
-            features.put("brightnessLevel", meanV.val(0) > 180 ? "HIGH" : meanV.val(0) > 120 ? "MEDIUM" : "LOW");
+            features.put("brightnessLevel", meanV.get(0) > 180 ? "HIGH" : meanV.get(0) > 120 ? "MEDIUM" : "LOW");
 
             return objectMapper.writeValueAsString(features);
 

@@ -2,15 +2,18 @@ package com.lakeserl.ai_skin_analysis_service.processor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lakeserl.ai_skin_analysis_service.ai.SkinAnalysisAiResult;
+import com.lakeserl.ai_skin_analysis_service.ai.SkinAnalysisNormalizer;
 import com.lakeserl.ai_skin_analysis_service.client.ProductServiceClient;
 import com.lakeserl.ai_skin_analysis_service.dto.response.RecommendedProductDTO;
 import com.lakeserl.ai_skin_analysis_service.dto.response.RoutineDTO;
 import com.lakeserl.ai_skin_analysis_service.entity.AIUsageLog;
+import com.lakeserl.ai_skin_analysis_service.entity.OutboxEvent;
 import com.lakeserl.ai_skin_analysis_service.entity.SkinAnalysisSession;
 import com.lakeserl.ai_skin_analysis_service.enums.AnalysisStatus;
 import com.lakeserl.ai_skin_analysis_service.event.payload.SkinAnalysisCompletedEvent;
 import com.lakeserl.ai_skin_analysis_service.event.producer.AIEventProducer;
 import com.lakeserl.ai_skin_analysis_service.repository.AIUsageLogRepository;
+import com.lakeserl.ai_skin_analysis_service.repository.OutboxRepository;
 import com.lakeserl.ai_skin_analysis_service.repository.SkinAnalysisSessionRepository;
 import com.lakeserl.ai_skin_analysis_service.service.AIAnalysisService;
 import com.lakeserl.ai_skin_analysis_service.service.CloudinaryService;
@@ -42,12 +45,18 @@ public class AnalysisProcessor {
     private final CloudinaryService cloudinaryService;
     private final RoutineGeneratorService routineGeneratorService;
     private final ProductServiceClient productServiceClient;
-    private final AIEventProducer eventProducer;
+    private final OutboxRepository outboxRepository;
     private final RedisTemplate<String, String> redisTemplate;
     private final ObjectMapper objectMapper;
+    private final SkinAnalysisNormalizer normalizer;
 
     @Value("${app.ai.vision-model:gemini-3.5-flash}")
     private String modelName;
+
+    // User-facing notice (Vietnamese, like all skin reports) stored when the AI degraded.
+    private static final String DEGRADED_NOTICE =
+            "Hệ thống phân tích AI tạm thời gián đoạn nên đây chỉ là kết quả cơ bản mặc định. "
+            + "Vui lòng thử lại sau để nhận phân tích đầy đủ.";
 
     /**
      * Accepts a temp-file path, NOT raw bytes.
@@ -127,6 +136,17 @@ public class AnalysisProcessor {
                     normalizedBytes, features, session.getAge(),
                     session.getSelfSkinType(), session.getSelfConcerns());
 
+            // Step 5b: Normalize AI output to canonical enum values BEFORE persistence or any
+            // downstream call (KI-1 defensive layer). Covers the success, UNKNOWN, and free-text
+            // fallback paths alike, since they all funnel through here.
+            aiResult.setDetectedSkinType(normalizer.normalizeSkinType(aiResult.getDetectedSkinType()));
+            aiResult.setConcerns(normalizer.normalizeConcerns(aiResult.getConcerns()));
+            boolean degraded = aiResult.isDegraded();
+            if (degraded) {
+                log.error("AI analysis degraded for sessionId={} — recording COMPLETED_DEGRADED; "
+                        + "skin profile will NOT be propagated downstream", sessionId);
+            }
+
             // Step 6: Log AI usage
             AIUsageLog usageLog = AIUsageLog.builder()
                     .userId(userId)
@@ -162,30 +182,42 @@ public class AnalysisProcessor {
             long elapsedTotal = System.currentTimeMillis() - startTime;
             session.setDetectedSkinType(aiResult.getDetectedSkinType());
             session.setDetectedConcerns(toJson(aiResult.getConcerns()));
-            session.setSkinConditionReport(aiResult.getAdvice());
+            session.setSkinConditionReport(degraded ? DEGRADED_NOTICE : aiResult.getAdvice());
             session.setRecommendedProductIds(toJson(products));
             session.setMorningRoutine(toJson(morningRoutine));
             session.setEveningRoutine(toJson(eveningRoutine));
             session.setTokensUsed((aiResult.getTokensInput() != null ? aiResult.getTokensInput() : 0)
                     + (aiResult.getTokensOutput() != null ? aiResult.getTokensOutput() : 0));
             session.setProcessingTimeMs((int) elapsedTotal);
-            session.setStatus(AnalysisStatus.COMPLETED);
+            session.setStatus(degraded ? AnalysisStatus.COMPLETED_DEGRADED : AnalysisStatus.COMPLETED);
             session.setCompletedAt(LocalDateTime.now());
             sessionRepository.save(session);
 
             // Dedup key was already set via SET NX at submission — no write needed here.
 
-            // Step 10: Publish Kafka event
-            SkinAnalysisCompletedEvent event = SkinAnalysisCompletedEvent.builder()
-                    .sessionId(sessionId)
-                    .userId(userId)
-                    .detectedSkinType(aiResult.getDetectedSkinType())
-                    .concerns(aiResult.getConcerns())
-                    .completedAt(session.getCompletedAt())
-                    .build();
-            eventProducer.publishSkinAnalysisCompleted(event);
+            // Step 10: Write the completion event to the outbox in THIS transaction — only for
+            // genuine completions. A degraded fallback (fabricated NORMAL) must not overwrite the
+            // user's canonical skin profile (KI-1). A scheduled publisher relays the row to Kafka,
+            // so we avoid the dual-write/lost-event problem of sending inside the DB transaction.
+            if (!degraded) {
+                SkinAnalysisCompletedEvent event = SkinAnalysisCompletedEvent.builder()
+                        .sessionId(sessionId)
+                        .userId(userId)
+                        .detectedSkinType(aiResult.getDetectedSkinType())
+                        .concerns(aiResult.getConcerns())
+                        .completedAt(session.getCompletedAt())
+                        .build();
+                outboxRepository.save(OutboxEvent.builder()
+                        .aggregateId(sessionId)
+                        .eventType(AIEventProducer.TOPIC_SKIN_ANALYSIS_COMPLETED)
+                        .payload(toJson(event))
+                        .build());
+            } else {
+                log.warn("Skipping skin-analysis-completed outbox write for degraded sessionId={}", sessionId);
+            }
 
-            log.info("Skin analysis completed for sessionId={} in {}ms", sessionId, elapsedTotal);
+            log.info("Skin analysis completed for sessionId={} in {}ms (degraded={})",
+                    sessionId, elapsedTotal, degraded);
 
         } catch (Exception e) {
             log.error("Async analysis failed for sessionId={}: {}", sessionId, e.getMessage(), e);

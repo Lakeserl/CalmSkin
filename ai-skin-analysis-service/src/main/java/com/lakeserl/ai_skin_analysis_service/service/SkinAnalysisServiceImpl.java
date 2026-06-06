@@ -20,7 +20,6 @@ import com.lakeserl.ai_skin_analysis_service.service.CloudinaryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.task.TaskRejectedException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -180,7 +179,7 @@ public class SkinAnalysisServiceImpl implements SkinAnalysisService {
         // 11. Submit path (not bytes) to the bounded executor
         try {
             analysisProcessor.processAsync(sessionId, tempImagePath.toString(), userId);
-        } catch (TaskRejectedException | java.util.concurrent.RejectedExecutionException ex) {
+        } catch (java.util.concurrent.RejectedExecutionException ex) {
             session.setStatus(AnalysisStatus.FAILED);
             session.setFailureReason("Service busy — analysis queue full");
             sessionRepository.save(session);
@@ -254,6 +253,7 @@ public class SkinAnalysisServiceImpl implements SkinAnalysisService {
     public Map<String, Object> getAdminStats() {
         long totalSessions = sessionRepository.countAllSessions();
         long completedSessions = sessionRepository.countByStatus(AnalysisStatus.COMPLETED);
+        long degradedSessions = sessionRepository.countByStatus(AnalysisStatus.COMPLETED_DEGRADED);
         long failedSessions = sessionRepository.countByStatus(AnalysisStatus.FAILED);
         long processingSessions = sessionRepository.countByStatus(AnalysisStatus.PROCESSING);
         double avgTokens = sessionRepository.avgTokensUsed();
@@ -262,6 +262,7 @@ public class SkinAnalysisServiceImpl implements SkinAnalysisService {
         return Map.of(
                 "total_sessions", totalSessions,
                 "completed", completedSessions,
+                "completed_degraded", degradedSessions,
                 "failed", failedSessions,
                 "processing", processingSessions,
                 "avg_tokens", Math.round(avgTokens),
