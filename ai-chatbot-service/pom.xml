@@ -21,7 +21,7 @@
   <properties>
     <java.version>17</java.version>
     <spring-cloud.version>2024.0.1</spring-cloud.version>
-    <spring-ai.version>1.0.0</spring-ai.version>
+    <spring-ai.version>1.1.7</spring-ai.version>
     <springdoc.version>2.6.0</springdoc.version>
     <logstash-encoder.version>7.4</logstash-encoder.version>
   </properties>
@@ -109,16 +109,22 @@
       <version>${springdoc.version}</version>
     </dependency>
 
-    <!-- SPRING AI — Google Gemini (chat + embedding) -->
+    <!-- SPRING AI — Google GenAI chat (Gemini Developer API; renamed from google-ai-gemini at 1.1.x) -->
     <dependency>
       <groupId>org.springframework.ai</groupId>
-      <artifactId>spring-ai-google-ai-gemini-spring-boot-starter</artifactId>
+      <artifactId>spring-ai-starter-model-google-genai</artifactId>
+    </dependency>
+
+    <!-- SPRING AI — Google GenAI embeddings (split into its own starter at 1.1.x) -->
+    <dependency>
+      <groupId>org.springframework.ai</groupId>
+      <artifactId>spring-ai-starter-model-google-genai-embedding</artifactId>
     </dependency>
 
     <!-- SPRING AI — pgvector store for RAG knowledge base -->
     <dependency>
       <groupId>org.springframework.ai</groupId>
-      <artifactId>spring-ai-pgvector-store-spring-boot-starter</artifactId>
+      <artifactId>spring-ai-starter-vector-store-pgvector</artifactId>
     </dependency>
 
     <dependency>
