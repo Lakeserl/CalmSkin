@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -15,6 +15,8 @@ services:
       POSTGRES_DB_REVIEW_SERVICE: ${POSTGRES_DB_REVIEW_SERVICE}
       POSTGRES_DB_SHIPPING_SERVICE: ${POSTGRES_DB_SHIPPING_SERVICE}
       POSTGRES_DB_SUBSCRIPTION_SERVICE: ${POSTGRES_DB_SUBSCRIPTION_SERVICE}
+      POSTGRES_DB_AI_SKIN_ANALYSIS: ${POSTGRES_DB_AI_SKIN_ANALYSIS}
+      POSTGRES_DB_CHATBOT: ${POSTGRES_DB_CHATBOT}
     ports:
       - "5433:5432"
     volumes:
@@ -139,8 +141,8 @@ services:
 
   user-service:
     build: ./user-service
-    ports:
-      - "8088:8088"
+    expose:
+      - "8081"
     environment:
       JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=50.0 -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -Xms64m -Xmx192m"
       POSTGRES_USER: ${POSTGRES_USER}
@@ -165,7 +167,7 @@ services:
     networks:
       - calm-skin-network
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8088/actuator/health"]
+      test: ["CMD", "wget", "-qO-", "http://localhost:8081/actuator/health"]
       interval: 15s
       timeout: 10s
       retries: 5
@@ -177,8 +179,8 @@ services:
 
   product-service:
     build: ./product-service
-    ports:
-      - "8086:8086"
+    expose:
+      - "8082"
     environment:
       JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=50.0 -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -Xms64m -Xmx192m"
       POSTGRES_USER: ${POSTGRES_USER}
@@ -188,82 +190,6 @@ services:
       INTERNAL_SECRET: ${INTERNAL_SECRET}
       EUREKA_URI: http://discovery-service:8761/eureka
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB_PRODUCT_SERVICE}
-      SPRING_DATA_REDIS_HOST: redis
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      ZIPKIN_HOST: zipkin
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      kafka:
-        condition: service_healthy
-      discovery-service:
-        condition: service_healthy
-    networks:
-      - calm-skin-network
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8086/actuator/health"]
-      interval: 15s
-      timeout: 10s
-      retries: 5
-    deploy:
-      resources:
-        limits:
-          memory: 512m
-          cpus: "0.5"
-
-  inventory-service:
-    build: ./inventory-service
-    ports:
-      - "8084:8084"
-    environment:
-      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=50.0 -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -Xms64m -Xmx192m"
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB_INVENTORY_SERVICE: ${POSTGRES_DB_INVENTORY_SERVICE}
-      JWT_SECRET: ${JWT_SECRET}
-      INTERNAL_SECRET: ${INTERNAL_SECRET}
-      EUREKA_URI: http://discovery-service:8761/eureka
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB_INVENTORY_SERVICE}
-      SPRING_DATA_REDIS_HOST: redis
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      ZIPKIN_HOST: zipkin
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      kafka:
-        condition: service_healthy
-      discovery-service:
-        condition: service_healthy
-    networks:
-      - calm-skin-network
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8084/actuator/health"]
-      interval: 15s
-      timeout: 10s
-      retries: 5
-    deploy:
-      resources:
-        limits:
-          memory: 512m
-          cpus: "0.5"
-
-  order-service:
-    build: ./order-service
-    ports:
-      - "8082:8082"
-    environment:
-      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=50.0 -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -Xms64m -Xmx192m"
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB_ORDER_SERVICE: ${POSTGRES_DB_ORDER_SERVICE}
-      JWT_SECRET: ${JWT_SECRET}
-      INTERNAL_SECRET: ${INTERNAL_SECRET}
-      EUREKA_URI: http://discovery-service:8761/eureka
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB_ORDER_SERVICE}
       SPRING_DATA_REDIS_HOST: redis
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       ZIPKIN_HOST: zipkin
@@ -289,10 +215,86 @@ services:
           memory: 512m
           cpus: "0.5"
 
+  inventory-service:
+    build: ./inventory-service
+    expose:
+      - "8083"
+    environment:
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=50.0 -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -Xms64m -Xmx192m"
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB_INVENTORY_SERVICE: ${POSTGRES_DB_INVENTORY_SERVICE}
+      JWT_SECRET: ${JWT_SECRET}
+      INTERNAL_SECRET: ${INTERNAL_SECRET}
+      EUREKA_URI: http://discovery-service:8761/eureka
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB_INVENTORY_SERVICE}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      ZIPKIN_HOST: zipkin
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+    networks:
+      - calm-skin-network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8083/actuator/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "0.5"
+
+  order-service:
+    build: ./order-service
+    expose:
+      - "8084"
+    environment:
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=50.0 -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -Xms64m -Xmx192m"
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB_ORDER_SERVICE: ${POSTGRES_DB_ORDER_SERVICE}
+      JWT_SECRET: ${JWT_SECRET}
+      INTERNAL_SECRET: ${INTERNAL_SECRET}
+      EUREKA_URI: http://discovery-service:8761/eureka
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB_ORDER_SERVICE}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      ZIPKIN_HOST: zipkin
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+    networks:
+      - calm-skin-network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8084/actuator/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "0.5"
+
   payment-service:
     build: ./payment-service
-    ports:
-      - "8085:8085"
+    expose:
+      - "8085"
     environment:
       JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=50.0 -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -Xms64m -Xmx192m"
       POSTGRES_USER: ${POSTGRES_USER}
@@ -329,8 +331,8 @@ services:
 
   notification-service:
     build: ./notification-service
-    ports:
-      - "8089:8089"
+    expose:
+      - "8088"
     environment:
       JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=50.0 -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -Xms64m -Xmx192m"
       POSTGRES_USER: ${POSTGRES_USER}
@@ -363,7 +365,7 @@ services:
     networks:
       - calm-skin-network
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8089/actuator/health"]
+      test: ["CMD", "wget", "-qO-", "http://localhost:8088/actuator/health"]
       interval: 15s
       timeout: 10s
       retries: 5
@@ -375,8 +377,8 @@ services:
 
   promotion-service:
     build: ./promotion-service
-    ports:
-      - "8087:8087"
+    expose:
+      - "8087"
     environment:
       JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=50.0 -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -Xms64m -Xmx192m"
       POSTGRES_USER: ${POSTGRES_USER}
@@ -412,8 +414,8 @@ services:
 
   review-service:
     build: ./review-service
-    ports:
-      - "8091:8091"
+    expose:
+      - "8086"
     environment:
       JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=50.0 -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -Xms64m -Xmx192m"
       POSTGRES_USER: ${POSTGRES_USER}
@@ -438,7 +440,7 @@ services:
     networks:
       - calm-skin-network
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8091/actuator/health"]
+      test: ["CMD", "wget", "-qO-", "http://localhost:8086/actuator/health"]
       interval: 15s
       timeout: 10s
       retries: 5
@@ -450,8 +452,8 @@ services:
 
   shipping-service:
     build: ./shipping-service
-    ports:
-      - "8090:8090"
+    expose:
+      - "8089"
     environment:
       JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=50.0 -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -Xms64m -Xmx192m"
       POSTGRES_USER: ${POSTGRES_USER}
@@ -474,7 +476,7 @@ services:
     networks:
       - calm-skin-network
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8090/actuator/health"]
+      test: ["CMD", "wget", "-qO-", "http://localhost:8089/actuator/health"]
       interval: 15s
       timeout: 10s
       retries: 5
@@ -486,8 +488,8 @@ services:
 
   subscription-service:
     build: ./subscription-service
-    ports:
-      - "8092:8092"
+    expose:
+      - "8092"
     environment:
       JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=50.0 -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -Xms64m -Xmx192m"
       POSTGRES_USER: ${POSTGRES_USER}
@@ -513,6 +515,176 @@ services:
       - calm-skin-network
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8092/actuator/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "0.5"
+
+  ai-skin-analysis-service:
+    build: ./ai-skin-analysis-service
+    expose:
+      - "8095"
+    environment:
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=50.0 -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -Xms64m -Xmx512m"
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB_AI_SKIN_ANALYSIS: ${POSTGRES_DB_AI_SKIN_ANALYSIS}
+      INTERNAL_SECRET: ${INTERNAL_SECRET}
+      EUREKA_URI: http://discovery-service:8761/eureka
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB_AI_SKIN_ANALYSIS}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      ZIPKIN_HOST: zipkin
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      CLOUDINARY_URL: ${CLOUDINARY_URL}
+      CLOUDINARY_UPLOAD_FOLDER: ${CLOUDINARY_UPLOAD_FOLDER:-calmskin}
+      AI_DAILY_LIMIT_SKIN_ANALYSIS: ${AI_DAILY_LIMIT_SKIN_ANALYSIS:-10}
+      GEMINI_MODEL_VISION: ${GEMINI_MODEL_VISION:-gemini-3.5-flash}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+    networks:
+      - calm-skin-network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8095/actuator/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+          cpus: "1.0"
+
+  elasticsearch:
+    image: elasticsearch:8.13.0
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    networks:
+      - calm-skin-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep -q '\"status\":\"green\"\\|\"status\":\"yellow\"'"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+          cpus: "1.0"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+
+  ai-chatbot-service:
+    build: ./ai-chatbot-service
+    expose:
+      - "8091"
+    environment:
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=50.0 -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -Xms64m -Xmx256m"
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB_CHATBOT: ${POSTGRES_DB_CHATBOT}
+      INTERNAL_SECRET: ${INTERNAL_SECRET}
+      JWT_SECRET: ${JWT_SECRET}
+      EUREKA_URI: http://discovery-service:8761/eureka
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB_CHATBOT}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      ZIPKIN_HOST: zipkin
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      AI_DAILY_LIMIT_CHATBOT: ${AI_DAILY_LIMIT_CHATBOT:-50}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+    networks:
+      - calm-skin-network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8091/actuator/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "0.5"
+
+  ai-recommendation-service:
+    build: ./ai-recommendation-service
+    expose:
+      - "8096"
+    environment:
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=50.0 -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -Xms64m -Xmx192m"
+      INTERNAL_SECRET: ${INTERNAL_SECRET}
+      JWT_SECRET: ${JWT_SECRET}
+      EUREKA_URI: http://discovery-service:8761/eureka
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      ZIPKIN_HOST: zipkin
+    depends_on:
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+    networks:
+      - calm-skin-network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8096/actuator/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 384m
+          cpus: "0.5"
+
+  search-service:
+    build: ./search-service
+    expose:
+      - "8093"
+    environment:
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=50.0 -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -Xms64m -Xmx256m"
+      INTERNAL_SECRET: ${INTERNAL_SECRET}
+      JWT_SECRET: ${JWT_SECRET}
+      EUREKA_URI: http://discovery-service:8761/eureka
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      ZIPKIN_HOST: zipkin
+      ELASTICSEARCH_HOST: elasticsearch
+      ELASTICSEARCH_PORT: 9200
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+    networks:
+      - calm-skin-network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8093/actuator/health"]
       interval: 15s
       timeout: 10s
       retries: 5
@@ -580,3 +752,4 @@ volumes:
   postgres-data:
   prometheus-data:
   grafana-data:
+  elasticsearch-data:

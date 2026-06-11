@@ -25,6 +25,12 @@ jobs:
           - notification-service
           - promotion-service
           - review-service
+          - shipping-service
+          - subscription-service
+          - ai-skin-analysis-service
+          - ai-chatbot-service
+          - ai-recommendation-service
+          - search-service
     steps:
       - name: Checkout
         uses: actions/checkout@v4
