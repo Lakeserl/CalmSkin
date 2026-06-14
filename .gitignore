@@ -2,6 +2,7 @@
 misc.xml
 compiler.xml
 vcs.xml
+target/
 generated-sources/
 generated-test-sources/
 surefire-reports/

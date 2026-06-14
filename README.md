@@ -11,6 +11,30 @@ CalmSkin is a modern, highly scalable, event-driven e-commerce and skincare pers
 
 ---
 
+## 📊 Project Status
+
+This is an actively developed portfolio/learning platform. The table reflects what is
+implemented in code today — not every path has been load- or integration-tested end to end.
+
+| Area | Status | Notes |
+|------|--------|-------|
+| Core commerce (user, product, inventory, order, cart) | ✅ Implemented | JWT auth via gateway; header-based identity downstream |
+| Payments | ✅ Sandbox only | VNPay/MoMo sandbox; **no production credentials** |
+| Promotions, reviews, shipping, subscriptions | ✅ Implemented | Kafka event-driven |
+| Notifications | ✅ Implemented | Multi-channel; Redis-backed idempotent dispatch |
+| Search (Elasticsearch) | 🟡 Functional | Live updates via Kafka; bulk reindex endpoint on product-service is WIP |
+| AI chatbot (RAG) | ✅ Implemented | Requires `GEMINI_API_KEY`; pgvector 768-dim |
+| AI skin analysis (vision) | ✅ Implemented | OpenCV + Gemini vision; degrades gracefully on AI failure |
+| AI recommendations | ✅ Implemented | Redis trending + content-based |
+| Reliability | ✅ DLT + idempotency + circuit breakers | On Kafka consumers and external AI calls |
+| Observability | ✅ Actuator + Zipkin + Prometheus/Grafana | |
+
+**Running locally:** copy `.env.example` to `.env` and set `POSTGRES_PASSWORD`, `JWT_SECRET`,
+`INTERNAL_SECRET`, and `GEMINI_API_KEY` (the AI services need a live key). Only the API gateway
+publishes a host port — call services through `http://localhost:8080`.
+
+---
+
 ## 🏗 System Architecture & Communication Flow
 
 The CalmSkin backend utilizes a **decentralized microservices architecture** structured around key enterprise patterns:
