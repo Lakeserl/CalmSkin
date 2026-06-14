@@ -24,6 +24,10 @@
         <module>review-service</module>
         <module>subscription-service</module>
         <module>shipping-service</module>
+        <module>ai-skin-analysis-service</module>
+        <module>ai-chatbot-service</module>
+        <module>ai-recommendation-service</module>
+        <module>search-service</module>
     </modules>
 
 </project>
