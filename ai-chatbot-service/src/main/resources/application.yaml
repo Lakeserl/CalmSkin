@@ -118,3 +118,16 @@ logging:
     root: INFO
     com.lakeserl.ai_chatbot_service: INFO
     org.springframework.ai: INFO
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      gemini-chat:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        # Trip on sustained slow chat calls so a Gemini slowdown fast-fails to the
+        # static fallback reply instead of tying up request threads.
+        slow-call-duration-threshold: 15s
+        slow-call-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 2

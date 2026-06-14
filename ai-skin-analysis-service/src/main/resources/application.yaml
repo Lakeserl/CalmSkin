@@ -145,3 +145,16 @@ logging:
     root: INFO
     com.lakeserl.ai_skin_analysis_service: INFO
     org.springframework.ai: INFO
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      gemini-vision:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        # Treat slow vision calls as failures so a Gemini slowdown trips the breaker
+        # before it can exhaust the @Async pool.
+        slow-call-duration-threshold: 20s
+        slow-call-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 2

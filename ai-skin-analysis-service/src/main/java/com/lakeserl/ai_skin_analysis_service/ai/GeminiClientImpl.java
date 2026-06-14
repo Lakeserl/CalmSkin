@@ -2,6 +2,7 @@ package com.lakeserl.ai_skin_analysis_service.ai;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.messages.SystemMessage;
@@ -28,7 +29,11 @@ public class GeminiClientImpl implements GeminiClient {
     private final PromptBuilder promptBuilder;
     private final ObjectMapper objectMapper;
 
+    // Circuit breaker fast-fails (and counts slow calls as failures) when Gemini is
+    // down or degraded, so a backlog of 20s+ vision calls cannot exhaust the @Async
+    // pool. Real failures and CircuitBreaker-open both route to analyzeImageFallback.
     @Override
+    @CircuitBreaker(name = "gemini-vision", fallbackMethod = "analyzeImageFallback")
     public SkinAnalysisAiResult analyzeImage(byte[] imageBytes, String features,
                                               Integer age, String selfSkinType,
                                               String concerns) {
@@ -46,22 +51,22 @@ public class GeminiClientImpl implements GeminiClient {
         Prompt prompt = new Prompt(List.of(systemMessage, userMessage), structuredOptions);
 
         long startTime = System.currentTimeMillis();
-        ChatResponse response;
-        try {
-            response = chatModel.call(prompt);
-        } catch (Exception e) {
-            // Gemini outage / 4xx / timeout — degrade instead of failing the session.
-            long elapsed = System.currentTimeMillis() - startTime;
-            log.error("Gemini API call failed after {}ms: {} — returning degraded fallback",
-                    elapsed, e.getMessage(), e);
-            return SkinAnalysisAiResult.degradedFallback(elapsed);
-        }
+        ChatResponse response = chatModel.call(prompt);
         long elapsed = System.currentTimeMillis() - startTime;
 
         String content = response.getResult().getOutput().getText();
         log.info("Gemini response received in {}ms, content length={}", elapsed, content.length());
 
         return parseResponse(content, elapsed, response);
+    }
+
+    /** Resilience4j fallback: Gemini outage / 4xx / timeout / circuit open. */
+    @SuppressWarnings("unused")
+    private SkinAnalysisAiResult analyzeImageFallback(byte[] imageBytes, String features,
+                                                      Integer age, String selfSkinType,
+                                                      String concerns, Throwable t) {
+        log.error("Gemini vision unavailable ({}) — returning degraded fallback", t.toString());
+        return SkinAnalysisAiResult.degradedFallback(0);
     }
 
     @SuppressWarnings("unchecked")

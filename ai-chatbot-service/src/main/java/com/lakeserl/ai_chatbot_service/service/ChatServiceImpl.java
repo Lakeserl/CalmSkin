@@ -12,7 +12,6 @@ import com.lakeserl.ai_chatbot_service.repository.ChatConversationRepository;
 import com.lakeserl.ai_chatbot_service.repository.ChatMessageRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
@@ -41,15 +40,19 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ChatServiceImpl implements ChatService {
 
-    private final ChatClient chatClient;
+    private final GeminiChatGateway geminiChatGateway;
     private final VectorStore vectorStore;
     private final ChatConversationRepository conversationRepository;
     private final ChatMessageRepository messageRepository;
     private final UserContextService userContextService;
     private final RedisTemplate<String, String> redisTemplate;
+    private final AIUsageLogService usageLogService;
 
     @Value("${app.ai.daily-limit-chatbot:50}")
     private int dailyLimit;
+
+    @Value("${spring.ai.google.genai.chat.options.model:gemini-1.5-flash}")
+    private String modelName;
 
     @Value("classpath:prompts/chatbot-system.txt")
     private org.springframework.core.io.Resource systemPromptResource;
@@ -86,19 +89,26 @@ public class ChatServiceImpl implements ChatService {
 
         String assistantReply;
         int tokensUsed = 0;
+        long aiStart = System.currentTimeMillis();
         try {
-            var response = chatClient.prompt()
-                    .messages(messages)
-                    .call()
-                    .chatResponse();
+            var response = geminiChatGateway.call(messages);
 
             assistantReply = response.getResult().getOutput().getText();
+            int tokensInput = 0;
+            int tokensOutput = 0;
             if (response.getMetadata() != null && response.getMetadata().getUsage() != null) {
-                tokensUsed = (int) (response.getMetadata().getUsage().getTotalTokens());
+                var usage = response.getMetadata().getUsage();
+                tokensInput = usage.getPromptTokens() != null ? usage.getPromptTokens() : 0;
+                tokensOutput = usage.getCompletionTokens() != null ? usage.getCompletionTokens() : 0;
+                tokensUsed = tokensInput + tokensOutput;
             }
+            usageLogService.record(userId, modelName, tokensInput, tokensOutput,
+                    (int) (System.currentTimeMillis() - aiStart), true, null);
         } catch (Exception e) {
             log.error("Gemini chat call failed for conversationId={}: {}", conversation.getId(), e.getMessage());
             assistantReply = "Xin lỗi, hiện tại tôi không thể trả lời. Vui lòng thử lại sau.";
+            usageLogService.record(userId, modelName, 0, 0,
+                    (int) (System.currentTimeMillis() - aiStart), false, e.getMessage());
         }
 
         // Persist both turns
