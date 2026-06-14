@@ -28,7 +28,9 @@ public class RoleHeaderAuthenticationFilter extends OncePerRequestFilter {
 
         // Only trust identity headers when the request carries the correct gateway secret.
         // Without this check, a caller that bypasses the gateway could inject arbitrary roles.
-        if (expectedGatewaySecret.equals(gatewaySecret)) {
+        if (gatewaySecret != null && java.security.MessageDigest.isEqual(
+                expectedGatewaySecret.getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                gatewaySecret.getBytes(java.nio.charset.StandardCharsets.UTF_8))) {
             String roleHeader = request.getHeader("X-User-Role");
             String userId = request.getHeader("X-User-Id");
 

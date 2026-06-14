@@ -33,7 +33,9 @@ public class InternalApiSecurityFilter extends OncePerRequestFilter {
         String path = request.getRequestURI();
         if (path.startsWith("/internal/")) {
             String secretHeader = request.getHeader("X-Internal-Secret");
-            if (secretHeader == null || !secretHeader.equals(expectedSecret)) {
+            if (secretHeader == null || !java.security.MessageDigest.isEqual(
+                    secretHeader.getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                    expectedSecret.getBytes(java.nio.charset.StandardCharsets.UTF_8))) {
                 response.setStatus(HttpStatus.FORBIDDEN.value());
                 response.setContentType(MediaType.APPLICATION_JSON_VALUE);
                 objectMapper.writeValue(response.getWriter(),

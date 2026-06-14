@@ -24,7 +24,9 @@ public class InternalApiSecurityFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
         if (request.getRequestURI().startsWith("/internal/")) {
             String secret = request.getHeader("X-Internal-Secret");
-            if (!internalSecret.equals(secret)) {
+            if (secret == null || !java.security.MessageDigest.isEqual(
+                    internalSecret.getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                    secret.getBytes(java.nio.charset.StandardCharsets.UTF_8))) {
                 log.warn("Internal API rejected — missing or wrong secret from {}", request.getRemoteAddr());
                 response.sendError(HttpServletResponse.SC_FORBIDDEN, "Forbidden");
                 return;

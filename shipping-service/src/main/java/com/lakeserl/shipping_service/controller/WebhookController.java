@@ -39,7 +39,9 @@ public class WebhookController {
             @PathVariable ShippingProvider provider,
             @RequestHeader(value = "X-Webhook-Secret", required = false) String secret,
             @Valid @RequestBody WebhookEventRequest payload) {
-        if (secret == null || !secret.equals(webhookSecret)) {
+        if (secret == null || !java.security.MessageDigest.isEqual(
+                secret.getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                webhookSecret.getBytes(java.nio.charset.StandardCharsets.UTF_8))) {
             throw new WebhookAuthException("Invalid or missing webhook secret");
         }
         Shipment shipment = shipmentService.applyWebhook(

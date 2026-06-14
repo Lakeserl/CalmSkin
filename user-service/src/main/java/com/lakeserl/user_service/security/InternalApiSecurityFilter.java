@@ -33,7 +33,9 @@ public class InternalApiSecurityFilter implements Filter {
 
         if (request.getRequestURI().startsWith("/internal/")) {
             String secret = request.getHeader("X-Internal-Secret");
-            if (secret == null || !secret.equals(internalSecret)) {
+            if (secret == null || !java.security.MessageDigest.isEqual(
+                    secret.getBytes(StandardCharsets.UTF_8),
+                    internalSecret.getBytes(StandardCharsets.UTF_8))) {
                 HttpServletResponse response = (HttpServletResponse) res;
                 response.setStatus(HttpStatus.FORBIDDEN.value());
                 response.setContentType(MediaType.APPLICATION_JSON_VALUE);

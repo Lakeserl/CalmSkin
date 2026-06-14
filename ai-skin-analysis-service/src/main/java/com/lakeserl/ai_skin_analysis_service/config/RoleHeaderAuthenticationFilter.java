@@ -27,7 +27,9 @@ public class RoleHeaderAuthenticationFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
         String gatewaySecret = request.getHeader("X-Gateway-Secret");
 
-        if (expectedGatewaySecret.equals(gatewaySecret)) {
+        if (gatewaySecret != null && java.security.MessageDigest.isEqual(
+                expectedGatewaySecret.getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                gatewaySecret.getBytes(java.nio.charset.StandardCharsets.UTF_8))) {
             String userId = request.getHeader("X-User-Id");
             String roleHeader = request.getHeader("X-User-Role");
 
