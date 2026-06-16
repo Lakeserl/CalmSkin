@@ -29,5 +29,8 @@ create_database "$POSTGRES_DB_NOTIFICATION_SERVICE"
 create_database "$POSTGRES_DB_PROMOTION_SERVICE"
 create_database "$POSTGRES_DB_REVIEW_SERVICE"
 create_database "$POSTGRES_DB_SHIPPING_SERVICE"
+create_database "$POSTGRES_DB_SUBSCRIPTION_SERVICE"
+create_database "$POSTGRES_DB_AI_SKIN_ANALYSIS"
+create_database "$POSTGRES_DB_CHATBOT"
 
 echo "postgres-init: database provisioning complete"

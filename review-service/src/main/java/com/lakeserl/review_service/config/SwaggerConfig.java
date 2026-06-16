@@ -24,7 +24,7 @@ public class SwaggerConfig {
                                 .email("lakeserl010@gmail.com")))
                 .servers(List.of(
                         new Server().url("http://localhost:8080").description("Gateway (local)"),
-                        new Server().url("http://localhost:8091").description("Direct (local dev)")
+                        new Server().url("http://localhost:8086").description("Direct (local dev)")
                 ));
     }
 }

@@ -110,7 +110,7 @@ springdoc:
     operations-sorter: alpha
 
 app:
-  internal-secret: ${INTERNAL_SECRET:dev-internal-secret-change-in-prod}
+  internal-secret: ${INTERNAL_SECRET}
 
   promotion:
     lock-ttl-minutes: 15

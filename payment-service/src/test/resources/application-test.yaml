@@ -12,3 +12,60 @@ spring:
         dialect: org.hibernate.dialect.H2Dialect
   flyway:
     enabled: false
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      retries: 0
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
+
+management:
+  health:
+    redis:
+      enabled: false
+  tracing:
+    sampling:
+      probability: 0.0
+  zipkin:
+    tracing:
+      endpoint: http://localhost:9411/api/v2/spans
+
+app:
+  internal-secret: test-secret
+  payment:
+    expiry-minutes: 15
+  vnpay:
+    tmn-code: TEST_TMN_CODE
+    hash-secret: TEST_HASH_SECRET
+    payment-url: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+    api-url: https://sandbox.vnpayment.vn/merchant_webapi/api/transaction
+    return-url: http://localhost:8080/api/v1/payments/webhook/vnpay/return
+    version: "2.1.0"
+    command: "pay"
+    order-type: "other"
+    locale: "vn"
+    curr-code: "VND"
+  momo:
+    partner-code: TEST_PARTNER_CODE
+    access-key: TEST_ACCESS_KEY
+    secret-key: TEST_SECRET_KEY
+    endpoint: https://test-payment.momo.vn
+    redirect-url: http://localhost:3000/payment/result
+    ipn-url: http://localhost:8085/api/v1/payments/webhook/momo/ipn
+    request-type: payWithMethod
+    lang: vi
+  zalopay:
+    app-id: "1"
+    key1: TEST_KEY1
+    key2: TEST_KEY2
+    endpoint: https://sb-openapi.zalopay.vn
+    callback-url: http://localhost:8085/api/v1/payments/webhook/zalopay/callback
+    redirect-url: http://localhost:3000/payment/result

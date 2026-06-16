@@ -1,8 +1,12 @@
 name: Build & Push Images
 
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
+    inputs:
+      service:
+        description: 'Service to build (leave blank for all)'
+        required: false
+        default: ''
 
 jobs:
   images:

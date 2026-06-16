@@ -111,7 +111,7 @@ springdoc:
     operations-sorter: alpha
 
 app:
-  internal-secret: ${INTERNAL_SECRET:dev-internal-secret-change-in-prod}
+  internal-secret: ${INTERNAL_SECRET}
 
   payment:
     expiry-minutes: 15

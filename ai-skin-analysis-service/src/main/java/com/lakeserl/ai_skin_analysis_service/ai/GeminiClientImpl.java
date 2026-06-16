@@ -51,7 +51,18 @@ public class GeminiClientImpl implements GeminiClient {
         Prompt prompt = new Prompt(List.of(systemMessage, userMessage), structuredOptions);
 
         long startTime = System.currentTimeMillis();
-        ChatResponse response = chatModel.call(prompt);
+        ChatResponse response;
+        try {
+            response = chatModel.call(prompt);
+        } catch (Exception e) {
+            // Gemini outage / 4xx / timeout — degrade instead of failing the session.
+            // (The @CircuitBreaker still records call duration, so sustained slow calls
+            // trip the breaker and fast-fail via analyzeImageFallback.)
+            long elapsed = System.currentTimeMillis() - startTime;
+            log.error("Gemini API call failed after {}ms: {} — returning degraded fallback",
+                    elapsed, e.getMessage(), e);
+            return SkinAnalysisAiResult.degradedFallback(elapsed);
+        }
         long elapsed = System.currentTimeMillis() - startTime;
 
         String content = response.getResult().getOutput().getText();

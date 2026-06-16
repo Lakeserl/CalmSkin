@@ -1,5 +1,5 @@
 server:
-  port: 8091
+  port: 8086
 
 internal:
   secret: ${INTERNAL_SECRET}
@@ -128,7 +128,7 @@ logging:
 
 app:
   internal:
-    secret: ${INTERNAL_SECRET:dev-internal-secret-change-in-prod}
+    secret: ${INTERNAL_SECRET}
   s3:
     region: ${AWS_REGION:ap-southeast-1}
     bucket: ${S3_BUCKET:calmskin-review-media}
