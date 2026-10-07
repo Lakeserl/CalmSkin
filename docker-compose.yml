@@ -81,7 +81,13 @@ services:
     networks:
       - calm-skin-network
     healthcheck:
-      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      test:
+        [
+          "CMD",
+          "kafka-broker-api-versions",
+          "--bootstrap-server",
+          "localhost:9092",
+        ]
       interval: 15s
       timeout: 10s
       retries: 5
@@ -330,6 +336,7 @@ services:
           cpus: "0.5"
 
   notification-service:
+    profiles: [extended]
     build: ./notification-service
     expose:
       - "8088"
@@ -376,6 +383,7 @@ services:
           cpus: "0.5"
 
   promotion-service:
+    profiles: [extended]
     build: ./promotion-service
     expose:
       - "8087"
@@ -413,6 +421,7 @@ services:
           cpus: "0.5"
 
   review-service:
+    profiles: [extended]
     build: ./review-service
     expose:
       - "8086"
@@ -451,6 +460,7 @@ services:
           cpus: "0.5"
 
   shipping-service:
+    profiles: [extended]
     build: ./shipping-service
     expose:
       - "8089"
@@ -487,6 +497,7 @@ services:
           cpus: "0.5"
 
   subscription-service:
+    profiles: [extended]
     build: ./subscription-service
     expose:
       - "8092"
@@ -525,6 +536,7 @@ services:
           cpus: "0.5"
 
   ai-skin-analysis-service:
+    profiles: [ai]
     build: ./ai-skin-analysis-service
     expose:
       - "8095"
@@ -567,6 +579,7 @@ services:
           cpus: "1.0"
 
   elasticsearch:
+    profiles: [search]
     image: elasticsearch:8.13.0
     environment:
       discovery.type: single-node
@@ -577,7 +590,11 @@ services:
     networks:
       - calm-skin-network
     healthcheck:
-      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep -q '\"status\":\"green\"\\|\"status\":\"yellow\"'"]
+      test:
+        [
+          "CMD-SHELL",
+          "curl -s http://localhost:9200/_cluster/health | grep -q '\"status\":\"green\"\\|\"status\":\"yellow\"'",
+        ]
       interval: 20s
       timeout: 10s
       retries: 5
@@ -590,6 +607,7 @@ services:
       - elasticsearch-data:/usr/share/elasticsearch/data
 
   ai-chatbot-service:
+    profiles: [ai]
     build: ./ai-chatbot-service
     expose:
       - "8091"
@@ -630,6 +648,7 @@ services:
           cpus: "0.5"
 
   ai-recommendation-service:
+    profiles: [ai]
     build: ./ai-recommendation-service
     expose:
       - "8096"
@@ -662,6 +681,7 @@ services:
           cpus: "0.5"
 
   search-service:
+    profiles: [search]
     build: ./search-service
     expose:
       - "8093"
@@ -695,6 +715,7 @@ services:
           cpus: "0.5"
 
   zipkin:
+    profiles: [observability]
     image: openzipkin/zipkin:latest
     ports:
       - "9411:9411"
@@ -712,6 +733,7 @@ services:
           cpus: "0.5"
 
   prometheus:
+    profiles: [observability]
     image: prom/prometheus:latest
     ports:
       - "9090:9090"
@@ -727,6 +749,7 @@ services:
           cpus: "0.5"
 
   grafana:
+    profiles: [observability]
     image: grafana/grafana:latest
     ports:
       - "3000:3000"
