@@ -1,8 +1,8 @@
 package com.lakeserl.product_service.client;
 
 import com.lakeserl.product_service.dto.response.ApiResponse;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -18,10 +18,13 @@ import java.util.UUID;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class OrderServiceClient {
 
     private final RestClient orderServiceClient;
+
+    public OrderServiceClient(@Qualifier("orderServiceRestClient") RestClient orderServiceClient) {
+        this.orderServiceClient = orderServiceClient;
+    }
 
     /**
      * Returns distinct productIds the user has purchased in DELIVERED orders (last 365 days).

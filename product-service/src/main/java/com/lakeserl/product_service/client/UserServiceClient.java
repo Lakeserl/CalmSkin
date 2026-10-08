@@ -3,9 +3,9 @@ package com.lakeserl.product_service.client;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.lakeserl.product_service.dto.response.ApiResponse;
 import lombok.Data;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
@@ -20,10 +20,13 @@ import java.util.UUID;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class UserServiceClient {
 
     private final RestClient userServiceClient;
+
+    public UserServiceClient(@Qualifier("userServiceRestClient") RestClient userServiceClient) {
+        this.userServiceClient = userServiceClient;
+    }
 
     /**
      * Returns the user's skin profile. Returns null if the user has no skin profile set.
