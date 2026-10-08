@@ -20,12 +20,12 @@ public class RestClientConfig {
     }
 
     @Bean
-    public RestClient userServiceClient(RestClient.Builder builder) {
+    public RestClient userServiceRestClient(RestClient.Builder builder) {
         return builder.baseUrl("http://USER-SERVICE").build();
     }
 
     @Bean
-    public RestClient orderServiceClient(RestClient.Builder builder) {
+    public RestClient orderServiceRestClient(RestClient.Builder builder) {
         return builder.baseUrl("http://ORDER-SERVICE").build();
     }
 }
