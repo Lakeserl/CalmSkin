@@ -748,6 +748,19 @@ services:
           memory: 512m
           cpus: "0.5"
 
+  blackbox-exporter:
+    profiles: [observability]
+    image: prom/blackbox-exporter:v0.25.0
+    expose:
+      - "9115"
+    networks:
+      - calm-skin-network
+    deploy:
+      resources:
+        limits:
+          memory: 128m
+          cpus: "0.25"
+
   grafana:
     profiles: [observability]
     image: grafana/grafana:latest
