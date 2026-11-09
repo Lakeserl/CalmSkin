@@ -47,6 +47,8 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             "/api/v1/auth/verify-email",
             "/api/v1/auth/resend-verification",
             "/api/v1/auth/oauth2/google",
+            "/api/v1/ingredients/check-safety",
+            "/api/v1/ingredients/check-conflicts",
             // Payment provider IPN/webhook callbacks arrive with no Authorization header.
             // Invariant §9: gateway blocks /internal/** — webhook paths are /api/v1/payments/webhook/**.
             "/api/v1/payments/webhook/",
@@ -166,7 +168,9 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     private String extractRole(Claims claims) {
         Object roles = claims.get("roles");
         if (roles instanceof List<?> list && !list.isEmpty()) {
-            return String.valueOf(list.get(0));
+            return list.stream()
+                    .map(String::valueOf)
+                    .collect(java.util.stream.Collectors.joining(","));
         }
         Object role = claims.get("role");
         return role != null ? role.toString() : null;

@@ -1,5 +1,20 @@
 package com.lakeserl.shipping_service.service;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.EnumMap;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.lakeserl.shipping_service.dto.response.ShipmentDTO;
 import com.lakeserl.shipping_service.entity.Shipment;
 import com.lakeserl.shipping_service.entity.ShipmentTrackingEvent;
@@ -15,22 +30,9 @@ import com.lakeserl.shipping_service.provider.CreateShipmentResponse;
 import com.lakeserl.shipping_service.provider.ShippingProviderRegistry;
 import com.lakeserl.shipping_service.repository.ShipmentRepository;
 import com.lakeserl.shipping_service.repository.ShipmentTrackingEventRepository;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.EnumMap;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
 
 @Slf4j
 @Service
