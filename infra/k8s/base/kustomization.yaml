@@ -11,21 +11,32 @@ resources:
   - data/kafka.yaml
   - data/elasticsearch.yaml
   - data/zipkin.yaml
-  # Apps
-  - discovery-service.yaml
-  - api-gateway.yaml
-  - user-service.yaml
-  - product-service.yaml
-  - order-service.yaml
+  # Apps (all 16 microservices)
+  - apps/discovery-service.yaml
+  - apps/api-gateway.yaml
+  - apps/user-service.yaml
+  - apps/product-service.yaml
+  - apps/inventory-service.yaml
+  - apps/order-service.yaml
+  - apps/payment-service.yaml
+  - apps/review-service.yaml
+  - apps/promotion-service.yaml
+  - apps/notification-service.yaml
+  - apps/shipping-service.yaml
+  - apps/ai-chatbot-service.yaml
+  - apps/subscription-service.yaml
+  - apps/search-service.yaml
+  - apps/ai-skin-analysis-service.yaml
+  - apps/ai-recommendation-service.yaml
   - ingress.yaml
 
-# Secrets are generated from git-ignored env files (see secrets/*.env.example).
-# The hash suffix rolls the pods automatically when a value changes.
 configMapGenerator:
   - name: postgres-init
     files:
       - data/postgres-init/01-create-databases.sh
 
+# Secrets are generated from git-ignored env files (see secrets/*.env.example).
+# The hash suffix rolls the pods automatically when a value changes.
 secretGenerator:
   - name: calmskin-secrets
     envs:

@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-chatbot-service
+  namespace: calmskin
+  labels:
+    app: ai-chatbot-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ai-chatbot-service
+  template:
+    metadata:
+      labels:
+        app: ai-chatbot-service
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8091"
+        prometheus.io/path: "/actuator/prometheus"
+    spec:
+      containers:
+        - name: ai-chatbot-service
+          image: ghcr.io/lakeserl/calmskin-ai-chatbot-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8091
+          envFrom:
+            - configMapRef:
+                name: calmskin-common-config
+            - secretRef:
+                name: calmskin-secrets
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:postgresql://postgres:5432/$(POSTGRES_DB_CHATBOT)"
+            - name: GEMINI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: calmskin-integrations
+                  key: GEMINI_API_KEY
+                  optional: true
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8091
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8091
+            initialDelaySeconds: 40
+            periodSeconds: 15
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-chatbot-service
+  namespace: calmskin
+spec:
+  type: ClusterIP
+  selector:
+    app: ai-chatbot-service
+  ports:
+    - name: http
+      port: 8091
+      targetPort: 8091
