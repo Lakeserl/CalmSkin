@@ -8,6 +8,7 @@ data:
   EUREKA_URI: "http://discovery-service:8761/eureka"
   ZIPKIN_HOST: "zipkin"
   S3_REGION: "ap-southeast-1"
+  AWS_REGION: "ap-southeast-1"
 
   # Redis / Kafka: both naming styles are set, because payment, promotion and
   # notification read REDIS_HOST / KAFKA_BOOTSTRAP_SERVERS instead of SPRING_*.

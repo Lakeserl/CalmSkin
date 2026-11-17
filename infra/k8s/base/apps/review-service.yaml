@@ -33,6 +33,20 @@ spec:
           env:
             - name: SPRING_DATASOURCE_URL
               value: "jdbc:postgresql://postgres:5432/$(POSTGRES_DB_REVIEW_SERVICE)"
+            - name: S3_BUCKET
+              value: "calmskin-app-review-media-dev"
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: calmskin-integrations
+                  key: S3_ACCESS_KEY
+                  optional: true
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: calmskin-integrations
+                  key: S3_SECRET_KEY
+                  optional: true
           resources:
             requests:
               cpu: "100m"
