@@ -33,6 +33,10 @@ spec:
           env:
             - name: SPRING_DATASOURCE_URL
               value: "jdbc:postgresql://postgres:5432/$(POSTGRES_DB_AI_SKIN_ANALYSIS)"
+            - name: PRODUCT_SERVICE_URL
+              value: "http://product-service:8082"
+            - name: USER_SERVICE_URL
+              value: "http://user-service:8081"
             - name: GEMINI_API_KEY
               valueFrom:
                 secretKeyRef:

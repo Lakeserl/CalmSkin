@@ -21,6 +21,11 @@ data:
   ELASTICSEARCH_HOST: "elasticsearch"
   ELASTICSEARCH_PORT: "9200"
 
+  # Mail settings (notification-service)
+  MAIL_HOST: "smtp.gmail.com"
+  MAIL_PORT: "587"
+  MAIL_FROM: "no-reply@calmskin.local"
+
   # One database per service. Read by the postgres init script and by each app's
   # SPRING_DATASOURCE_URL ($(POSTGRES_DB_...) expansion).
   POSTGRES_DB_USER_SERVICE: "calm_skin_user_service_db"

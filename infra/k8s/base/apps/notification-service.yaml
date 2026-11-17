@@ -33,12 +33,6 @@ spec:
           env:
             - name: SPRING_DATASOURCE_URL
               value: "jdbc:postgresql://postgres:5432/$(POSTGRES_DB_NOTIFICATION_SERVICE)"
-            - name: MAIL_HOST
-              value: "smtp.gmail.com"
-            - name: MAIL_PORT
-              value: "587"
-            - name: MAIL_FROM
-              value: "no-reply@calmskin.local"
             - name: MAIL_USERNAME
               valueFrom:
                 secretKeyRef:

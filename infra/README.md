@@ -34,7 +34,7 @@ terraform plan
 terraform apply
 
 # 5. Lấy thông tin S3 credentials để nạp vào K8s secrets/integrations.env
-terraform output s3_access_key_id
+terraform output -raw s3_access_key_id
 terraform output -raw s3_secret_access_key
 ```
 
