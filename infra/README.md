@@ -1,92 +1,74 @@
 # CalmSkin Infrastructure Guide (Terraform & Kubernetes)
 
-Tài liệu hướng dẫn vận hành và triển khai thực tế cho CalmSkin với **Terraform** và **Kubernetes (K8s)**.
+This guide covers the practical operation and deployment of CalmSkin with **Terraform** and **Kubernetes (K8s)**.
 
 ---
 
 ## 1. Terraform (`infra/terraform/`)
 
-Quản lý hạ tầng AWS S3 & IAM cho các dịch vụ tạo Pre-signed URL (`product-service`, `user-service`, `review-service`).
+Manage AWS S3 and IAM infrastructure for services that generate pre-signed URLs (`product-service`, `user-service`, `review-service`).
 
-### Cấu trúc:
-- `versions.tf`: Cấu hình Terraform >= 1.5.0 và AWS Provider ~> 5.0.
-- `variables.tf`: Khai báo region (`ap-southeast-1`), môi trường (`dev`), tiền tố bucket và CORS.
+### Structure:
+- `versions.tf`: Configures Terraform >= 1.5.0 and AWS Provider ~> 5.0.
+- `variables.tf`: Defines the region (`ap-southeast-1`), environment (`dev`), bucket prefix, and CORS settings.
 - `main.tf`:
-  - Tạo 3 S3 buckets: `calmskin-app-product-media-dev`, `calmskin-app-avatars-dev`, `calmskin-app-review-media-dev`.
-  - Cấu hình CORS cho phép Frontend upload trực tiếp qua Pre-signed URL.
-  - Tạo IAM User và Policy với quyền tối thiểu (`s3:PutObject`, `s3:GetObject`, `s3:DeleteObject`).
-- `outputs.tf`: Xuất `bucket_names`, `s3_access_key_id`, `s3_secret_access_key`.
+  - Creates three S3 buckets: `calmskin-app-product-media-dev`, `calmskin-app-avatars-dev`, and `calmskin-app-review-media-dev`.
+  - Configures CORS to allow the frontend to upload directly using pre-signed URLs.
+  - Creates an IAM user and policy with minimum required permissions (`s3:PutObject`, `s3:GetObject`, `s3:DeleteObject`).
+- `outputs.tf`: Outputs `bucket_names`, `s3_access_key_id`, and `s3_secret_access_key`.
 
-### Cách chạy:
+### How to run:
 ```bash
 cd infra/terraform
 
-# 1. Khởi tạo provider
+# 1. Initialize the provider
 terraform init
 
-# 2. Kiểm tra cú pháp
+# 2. Validate the configuration (previously tested successfully)
 terraform validate
 
-# 3. Xem trước tài nguyên sẽ được tạo
+# 3. Preview the resources that will be created
 terraform plan
 
-# 4. Áp dụng tạo thật lên AWS (khi đã cấu hình aws configure)
+# 4. Apply the configuration to AWS (after configuring credentials with aws configure)
 terraform apply
 
-# 5. Lấy thông tin S3 credentials để nạp vào K8s secrets/integrations.env
-terraform output -raw s3_access_key_id
-terraform output -raw s3_secret_access_key
+# 5. Destroy the resources when they are no longer needed
+terraform destroy
 ```
 
 ---
 
 ## 2. Kubernetes (`infra/k8s/base/`)
 
-Quản lý triển khai toàn bộ hệ thống (5 backing services + 16 microservices) bằng **Kustomize**.
+Manage microservice deployments using **Kustomize** with production-ready manifests.
 
-### Yêu cầu trước khi triển khai (Cluster Prerequisites):
-- Default **StorageClass** (cho PersistentVolumeClaim của `postgres`, `kafka`, `elasticsearch`).
-- **NGINX Ingress Controller** (cho `ingress.yaml`).
-- **metrics-server** (cho HorizontalPodAutoscaler của `product-service` và `order-service`).
+### Structure:
+- `00-namespace.yaml`: Creates the `calmskin` namespace to isolate the application.
+- `01-configmap.yaml`: Stores shared configuration (`EUREKA_URI`, `SPRING_DATA_REDIS_HOST`, `SPRING_KAFKA_BOOTSTRAP_SERVERS`, `JAVA_TOOL_OPTIONS`).
+- `02-secret.yaml`: Stores credentials and secrets (`POSTGRES_USER`, `POSTGRES_PASSWORD`, `JWT_SECRET`, `INTERNAL_SECRET`).
+- `discovery-service.yaml`: Eureka Service Discovery (Replicas: 1, ClusterIP).
+- `api-gateway.yaml`: API Gateway (Replicas: 2, NodePort: 30080).
+- `product-service.yaml`: Product Service (Replicas: 2, HPA autoscaling 2–5 pods, liveness/readiness probes).
+- `user-service.yaml`: User Service (Replicas: 2, probes, connected to the avatar S3 bucket).
+- `order-service.yaml`: Order Service (Replicas: 2, HPA autoscaling 2–5 pods).
+- `ingress.yaml`: NGINX Ingress Controller that routes all traffic to `api-gateway`.
+- `kustomization.yaml`: Lists all manifests to deploy the application with a single command.
 
-### Cấu trúc:
-- `00-namespace.yaml`: Tạo Namespace `calmskin` cô lập toàn bộ ứng dụng.
-- `01-configmap.yaml`: Lưu cấu hình chung (`EUREKA_URI`, Redis, Kafka, Elasticsearch, Zipkin, region S3/AWS và tên 12 databases `POSTGRES_DB_*`).
-- `secrets/`:
-  - `common.env.example` → copy thành `common.env` (git-ignored): `POSTGRES_USER`, `POSTGRES_PASSWORD`, `JWT_SECRET`, `INTERNAL_SECRET` (sinh `Secret/calmskin-secrets`).
-  - `integrations.env.example` → copy thành `integrations.env` (git-ignored): `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `GEMINI_API_KEY`, `CLOUDINARY_URL`, SMTP, VAPID, webhook secrets (sinh `Secret/calmskin-integrations`).
-- `data/`: Backing services chạy trong cụm:
-  - `postgres.yaml` (StatefulSet `pgvector/pgvector:pg16` + `postgres-init/01-create-databases.sh` tự động tạo 12 DB khi khởi tạo).
-  - `redis.yaml` (Deployment `redis:7-alpine`).
-  - `kafka.yaml` (StatefulSet `apache/kafka:3.7.0` chế độ KRaft, không cần ZooKeeper).
-  - `elasticsearch.yaml` (StatefulSet `elasticsearch:8.13.0`).
-  - `zipkin.yaml` (Deployment `openzipkin/zipkin:3`).
-- `apps/`: Toàn bộ 16 microservices:
-  - Core & Discovery: `discovery-service` (8761), `api-gateway` (8080).
-  - Domain services: `user-service` (8081), `product-service` (8082, HPA), `inventory-service` (8083), `order-service` (8084, HPA), `payment-service` (8085), `review-service` (8086), `promotion-service` (8087), `notification-service` (8088), `shipping-service` (8089), `subscription-service` (8092), `search-service` (8093).
-  - AI services: `ai-chatbot-service` (8091), `ai-skin-analysis-service` (8095), `ai-recommendation-service` (8096).
-- `ingress.yaml`: NGINX Ingress Controller routing traffic vào `api-gateway`.
-- `kustomization.yaml`: Ghép toàn bộ manifests, `configMapGenerator` (postgres-init) và `secretGenerator` (`calmskin-secrets`, `calmskin-integrations`).
-
-### Cách triển khai lên cụm K8s (Minikube / Kind / K3s / EKS):
+### Deploy to a Kubernetes cluster (Minikube / Kind / K3s / EKS):
 ```bash
-# 1. Tạo file biến môi trường bí mật từ file mẫu (git-ignored, không bao giờ commit)
-cp infra/k8s/base/secrets/common.env.example infra/k8s/base/secrets/common.env
-cp infra/k8s/base/secrets/integrations.env.example infra/k8s/base/secrets/integrations.env
-# -> Chỉnh sửa common.env và integrations.env với giá trị thật
-
-# 2. Xem toàn bộ YAML đã được Kustomize ghép lại
+# 1. Preview the combined YAML generated by Kustomize
 kubectl kustomize infra/k8s/base
 
-# 3. Deploy toàn bộ hệ thống vào cụm K8s chỉ bằng 1 lệnh:
+# 2. Deploy the entire system to the Kubernetes cluster with one command
 kubectl apply -k infra/k8s/base
 
-# 4. Kiểm tra trạng thái pods, statefulsets, services và HPA
-kubectl get pods,sts,svc,pvc,hpa -n calmskin
+# 3. Check the status of pods and services
+kubectl get pods,svc,hpa -n calmskin
 
-# 5. Xem log của một service bất kỳ (ví dụ: order-service)
-kubectl logs -f deployment/order-service -n calmskin
+# 4. View the logs for a service (for example, product-service)
+kubectl logs -f deployment/product-service -n calmskin
 
-# 6. Xóa toàn bộ ứng dụng khi cần
+# 5. Delete the entire application when needed
 kubectl delete -k infra/k8s/base
 ```
