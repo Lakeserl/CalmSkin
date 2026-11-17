@@ -1,0 +1,23 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: calmskin
+
+resources:
+  - 00-namespace.yaml
+  - 01-configmap.yaml
+  - discovery-service.yaml
+  - api-gateway.yaml
+  - user-service.yaml
+  - product-service.yaml
+  - order-service.yaml
+  - ingress.yaml
+
+# Secrets are generated from git-ignored env files (see secrets/*.env.example).
+# The hash suffix rolls the pods automatically when a value changes.
+secretGenerator:
+  - name: calmskin-secrets
+    envs:
+      - secrets/common.env
+  - name: calmskin-integrations
+    envs:
+      - secrets/integrations.env
