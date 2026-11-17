@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shipping-service
+  namespace: calmskin
+  labels:
+    app: shipping-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: shipping-service
+  template:
+    metadata:
+      labels:
+        app: shipping-service
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8089"
+        prometheus.io/path: "/actuator/prometheus"
+    spec:
+      containers:
+        - name: shipping-service
+          image: ghcr.io/lakeserl/calmskin-shipping-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8089
+          envFrom:
+            - configMapRef:
+                name: calmskin-common-config
+            - secretRef:
+                name: calmskin-secrets
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:postgresql://postgres:5432/$(POSTGRES_DB_SHIPPING_SERVICE)"
+            - name: SHIPPING_WEBHOOK_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: calmskin-integrations
+                  key: SHIPPING_WEBHOOK_SECRET
+                  optional: true
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8089
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8089
+            initialDelaySeconds: 40
+            periodSeconds: 15
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: shipping-service
+  namespace: calmskin
+spec:
+  type: ClusterIP
+  selector:
+    app: shipping-service
+  ports:
+    - name: http
+      port: 8089
+      targetPort: 8089

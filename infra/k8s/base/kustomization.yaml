@@ -1,0 +1,46 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: calmskin
+
+resources:
+  - 00-namespace.yaml
+  - 01-configmap.yaml
+  # Backing services
+  - data/postgres.yaml
+  - data/redis.yaml
+  - data/kafka.yaml
+  - data/elasticsearch.yaml
+  - data/zipkin.yaml
+  # Apps (all 16 microservices)
+  - apps/discovery-service.yaml
+  - apps/api-gateway.yaml
+  - apps/user-service.yaml
+  - apps/product-service.yaml
+  - apps/inventory-service.yaml
+  - apps/order-service.yaml
+  - apps/payment-service.yaml
+  - apps/review-service.yaml
+  - apps/promotion-service.yaml
+  - apps/notification-service.yaml
+  - apps/shipping-service.yaml
+  - apps/ai-chatbot-service.yaml
+  - apps/subscription-service.yaml
+  - apps/search-service.yaml
+  - apps/ai-skin-analysis-service.yaml
+  - apps/ai-recommendation-service.yaml
+  - ingress.yaml
+
+configMapGenerator:
+  - name: postgres-init
+    files:
+      - data/postgres-init/01-create-databases.sh
+
+# Secrets are generated from git-ignored env files (see secrets/*.env.example).
+# The hash suffix rolls the pods automatically when a value changes.
+secretGenerator:
+  - name: calmskin-secrets
+    envs:
+      - secrets/common.env
+  - name: calmskin-integrations
+    envs:
+      - secrets/integrations.env

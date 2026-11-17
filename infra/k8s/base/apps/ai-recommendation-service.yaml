@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-recommendation-service
+  namespace: calmskin
+  labels:
+    app: ai-recommendation-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ai-recommendation-service
+  template:
+    metadata:
+      labels:
+        app: ai-recommendation-service
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8096"
+        prometheus.io/path: "/actuator/prometheus"
+    spec:
+      containers:
+        - name: ai-recommendation-service
+          image: ghcr.io/lakeserl/calmskin-ai-recommendation-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8096
+          envFrom:
+            - configMapRef:
+                name: calmskin-common-config
+            - secretRef:
+                name: calmskin-secrets
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "192Mi"
+            limits:
+              cpu: "500m"
+              memory: "384Mi"
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8096
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8096
+            initialDelaySeconds: 40
+            periodSeconds: 15
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-recommendation-service
+  namespace: calmskin
+spec:
+  type: ClusterIP
+  selector:
+    app: ai-recommendation-service
+  ports:
+    - name: http
+      port: 8096
+      targetPort: 8096
