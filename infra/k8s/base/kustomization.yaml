@@ -5,6 +5,13 @@ namespace: calmskin
 resources:
   - 00-namespace.yaml
   - 01-configmap.yaml
+  # Backing services
+  - data/postgres.yaml
+  - data/redis.yaml
+  - data/kafka.yaml
+  - data/elasticsearch.yaml
+  - data/zipkin.yaml
+  # Apps
   - discovery-service.yaml
   - api-gateway.yaml
   - user-service.yaml
@@ -14,6 +21,11 @@ resources:
 
 # Secrets are generated from git-ignored env files (see secrets/*.env.example).
 # The hash suffix rolls the pods automatically when a value changes.
+configMapGenerator:
+  - name: postgres-init
+    files:
+      - data/postgres-init/01-create-databases.sh
+
 secretGenerator:
   - name: calmskin-secrets
     envs:

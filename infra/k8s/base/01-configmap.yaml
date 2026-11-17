@@ -6,7 +6,31 @@ metadata:
 data:
   JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=50.0 -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -Xms64m -Xmx192m"
   EUREKA_URI: "http://discovery-service:8761/eureka"
-  SPRING_DATA_REDIS_HOST: "redis"
-  SPRING_KAFKA_BOOTSTRAP_SERVERS: "kafka:29092"
   ZIPKIN_HOST: "zipkin"
   S3_REGION: "ap-southeast-1"
+
+  # Redis / Kafka: both naming styles are set, because payment, promotion and
+  # notification read REDIS_HOST / KAFKA_BOOTSTRAP_SERVERS instead of SPRING_*.
+  SPRING_DATA_REDIS_HOST: "redis"
+  REDIS_HOST: "redis"
+  REDIS_PORT: "6379"
+  SPRING_KAFKA_BOOTSTRAP_SERVERS: "kafka:29092"
+  KAFKA_BOOTSTRAP_SERVERS: "kafka:29092"
+
+  ELASTICSEARCH_HOST: "elasticsearch"
+  ELASTICSEARCH_PORT: "9200"
+
+  # One database per service. Read by the postgres init script and by each app's
+  # SPRING_DATASOURCE_URL ($(POSTGRES_DB_...) expansion).
+  POSTGRES_DB_USER_SERVICE: "calm_skin_user_service_db"
+  POSTGRES_DB_PRODUCT_SERVICE: "calm_skin_product_service_db"
+  POSTGRES_DB_INVENTORY_SERVICE: "calm_skin_inventory_db"
+  POSTGRES_DB_ORDER_SERVICE: "calm_skin_order_db"
+  POSTGRES_DB_PAYMENT_SERVICE: "calm_skin_payment_db"
+  POSTGRES_DB_NOTIFICATION_SERVICE: "calm_skin_notification_db"
+  POSTGRES_DB_PROMOTION_SERVICE: "calm_skin_promotion_db"
+  POSTGRES_DB_REVIEW_SERVICE: "calm_skin_review_db"
+  POSTGRES_DB_SHIPPING_SERVICE: "calm_skin_shipping_db"
+  POSTGRES_DB_SUBSCRIPTION_SERVICE: "calm_skin_subscription_db"
+  POSTGRES_DB_AI_SKIN_ANALYSIS: "calm_skin_ai_skin_analysis_db"
+  POSTGRES_DB_CHATBOT: "calm_skin_chatbot_db"
